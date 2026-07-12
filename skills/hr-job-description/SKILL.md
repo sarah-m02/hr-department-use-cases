@@ -1,9 +1,9 @@
 ---
 name: hr-job-description
-description: Drafts inclusive, bias-audited job descriptions with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Collects role context interactively when needed, then produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
+description: Drafts inclusive, bias-audited job descriptions with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses short MCQ context questions to gather any missing details, then produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.0.0"
-  attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with interactive input collection, trigger-context preprocessing, and PIF-styled Word artifact output.
+  version: "1.1.0"
+  attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
 # HR Job Description Drafting
@@ -20,48 +20,69 @@ Activate on user messages that follow patterns like:
 - *"Write a job description for [role]"*
 - *"Job description for [role] in [division]"*
 - *"Create a JD for [role]"*
-- *"Rewrite this JD:"* (followed by an existing description)
+- *"Rewrite this JD:"* (followed by an existing description in the same message)
 - Or any explicit request to create or refine a job posting.
 
 ---
 
-## Step 1 — Optional Context Input
+## Step 1 — Preprocess: Extract Context Already in the Trigger
 
-Immediately after being triggered, post this message in chat:
+**Before asking any questions**, scan the user's trigger message and extract:
 
-> **I'll draft the job description. If you'd like to give me any additional context (existing JD to modify, specific must-have skills to emphasize, or culture notes to include), paste it here now. Otherwise, just say "skip" or "generate" and I'll produce a first draft from your trigger.**
->
-> Accepted input methods:
-> - **Paste directly here in chat** — existing JD or free-text context
-> - **Attach a document** — Word (`.docx`), PDF (`.pdf`), or plain text (`.txt`)
-> - **Say "skip"** — proceed with only the role name from your trigger
-
-Wait for the user's response before moving on. Treat "skip" or "generate" as an explicit signal to proceed without extra context.
-
----
-
-## Step 2 — Preprocess: Reuse Any Context Already Provided
-
-Before invoking `AskUserQuestion`, **scan the user's original trigger message** for context that already answers the framing questions.
-
-Explicitly check for:
 - **Role name / title** — always required, usually in the trigger (e.g. *"Senior Investment Analyst"*)
-- **Level / seniority** — often implied by the title (e.g. *"Senior"*, *"VP"*, *"Director"*, *"Manager"*, *"Head of"*) → if clear, skip Question 1
-- **Division / business unit** — e.g. *"Real Estate"*, *"Investments"*, *"Corporate Functions"*, *"Technology"* → if mentioned, skip Question 2
+- **Level / seniority** — often implied by the title (e.g. *"Senior"*, *"VP"*, *"Director"*, *"Manager"*, *"Head of"*)
+- **Division / business unit** — e.g. *"Real Estate"*, *"Investments"*, *"Corporate Functions"*, *"Technology"*
+- **Existing JD text pasted?** — if the trigger contains a full JD, treat this as a rewrite task and use the paste as the starting point
 
 Confirm what was extracted in one short message:
 
-> *"Noted from your request: Role = [X], Level = [Y], Division = [Z]. I'll ask about the remaining detail(s) next."*
+> *"Noted: Role = [X], Level = [Y], Division = [Z]. A few quick context questions to make the JD sharper."*
 
-If **role, level, AND division** are all clear from the trigger, skip Step 3 entirely and proceed to Step 4 (Generate JD content).
+Then proceed to Step 2.
 
 ---
 
-## Step 3 — Gather Any Missing Framing Inputs (via `AskUserQuestion`)
+## Step 2 — Ask 3–4 MCQ Context Questions (via `AskUserQuestion`)
 
-For any framing input NOT already provided, use the `AskUserQuestion` tool. Do NOT ask in free-text chat.
+Use the `AskUserQuestion` tool to ask short multiple-choice questions in a single call. Do NOT ask in free-text chat.
 
-### Question 1 — Level / Seniority *(only ask if not clear from role name)*
+**Rules for which questions to ask:**
+- Always ask **Team leadership**, **Employment type**, and **Work arrangement** — these are the 3 highest-signal inputs the trigger usually doesn't include
+- If **Level** was NOT clear from the trigger, add it as a 4th question and drop **Work arrangement** (default it to *"On-site (Riyadh)"*)
+- If **Division** was NOT in the trigger, add it as a 4th question and drop **Employment type** (default it to *"Full-time (permanent)"*)
+- Cap the total at 4 questions
+
+### Question A — Team leadership scope *(always ask)*
+- **header:** `Team scope`
+- **question:** *"How much people leadership does this role involve?"*
+- **options (4):**
+  - `Individual contributor (no direct reports)`
+  - `Manages a small team (2–4 people)`
+  - `Manages a large team (5+ people)`
+  - `Manages managers / leads a department`
+- **multiSelect:** false
+
+### Question B — Employment type *(always ask unless dropped)*
+- **header:** `Employment`
+- **question:** *"What is the employment type for this role?"*
+- **options (4):**
+  - `Full-time (permanent)`
+  - `Contract / fixed-term`
+  - `Part-time`
+  - `Secondment / internal transfer`
+- **multiSelect:** false
+
+### Question C — Work arrangement *(always ask unless dropped)*
+- **header:** `Work model`
+- **question:** *"What's the work arrangement?"*
+- **options (4):**
+  - `On-site (Riyadh)`
+  - `Hybrid (mix of on-site and remote)`
+  - `Remote (fully remote)`
+  - `Flexible / to be discussed`
+- **multiSelect:** false
+
+### Question D — Level *(only if not clear from trigger)*
 - **header:** `Level`
 - **question:** *"What level is this role?"*
 - **options (4):**
@@ -71,53 +92,63 @@ For any framing input NOT already provided, use the `AskUserQuestion` tool. Do N
   - `C-suite / Executive (15+ yrs)`
 - **multiSelect:** false
 
-### Question 2 — Division / Business Unit *(only ask if not mentioned in trigger)*
+### Question E — Division *(only if not in trigger)*
 - **header:** `Division`
 - **question:** *"Which division is this role in?"*
 - **options (4):**
   - `Investments Division`
   - `Corporate Functions`
   - `Technology`
-  - `Other divisions` *(user can type a custom value)*
+  - `Other divisions`
 - **multiSelect:** false
 
-**After receiving answers, confirm briefly in chat:**
-> *"Drafting a JD for [Role] · [Level] · [Division]. One moment."*
+**After receiving answers, briefly confirm:**
+> *"Drafting a JD for [Role] · [Level] · [Division] · [Employment] · [Work model] · [Team scope]. One moment."*
 
-Then proceed to Step 4.
+Then proceed to Step 3.
 
 ---
 
-## Step 4 — Generate the JD Content
+## Step 3 — Generate the JD Content
 
-Produce the JD content in memory (not in chat — chat will get a brief summary only). Apply the following principles:
+Produce the JD content in memory (chat gets a brief summary only). Apply the following principles:
 
-### 4.1 Role Overview / Purpose (1–2 short paragraphs)
+### 3.1 Role Overview / Purpose (1–2 short paragraphs)
 Explain **why this role exists** and its impact on the business. Lead with the outcome the role delivers, not the tasks it performs. Anchor to the division's mission.
 
-### 4.2 Key Responsibilities (5–8 bullets)
-Outcome-oriented, not activity-oriented. Each bullet starts with an action verb and describes a result, not a duty. Avoid vague phrases like *"handle assigned tasks"* or *"other duties as needed."*
+### 3.2 Key Responsibilities (5–8 bullets)
+Outcome-oriented, not activity-oriented. Each bullet starts with an action verb and describes a result. Avoid vague phrases like *"handle assigned tasks"* or *"other duties as needed."*
 
-### 4.3 Must-Have Qualifications
-Only genuinely required to perform the role from day 1. Do NOT inflate — every must-have narrows the applicant pool. Typically 4–6 items covering: experience level, core technical skills, credentials that are genuinely non-negotiable, and language requirements.
+**Tailor to team-leadership scope:**
+- Individual contributor → emphasize technical delivery and cross-team collaboration
+- Manages team → add people-management responsibilities (coaching, hiring, performance)
+- Manages managers → add strategic responsibilities (setting direction, capability building)
 
-### 4.4 Nice-to-Have Qualifications
+### 3.3 Must-Have Qualifications
+Only genuinely required to perform the role from day 1. Do NOT inflate — every must-have narrows the applicant pool. Typically 4–6 items: experience level, core technical skills, non-negotiable credentials, and language requirements.
+
+**Include a management-experience requirement only if the role manages people.**
+
+### 3.4 Nice-to-Have Qualifications
 Things that would make a candidate stand out but are not required. Typically 3–5 items: adjacent skills, secondary languages, specific industry exposure, advanced degrees.
 
 **Why the split matters:** Research shows underrepresented candidates hesitate to apply when they don't meet every listed requirement. Separating must-have from nice-to-have materially widens the pool.
 
-### 4.5 30/60/90-Day Success Expectations
+### 3.5 30/60/90-Day Success Expectations
 Concrete, observable outcomes at each milestone:
 - **First 30 days** — onboarding, relationships, learning
 - **First 60 days** — early contributions, first outputs
 - **First 90 days** — measurable impact, independence
 
-Tailor the depth to the level (Analyst = ramp-heavy; Director = impact-heavy from day one).
+Tailor depth to the level (Analyst = ramp-heavy; Director = impact-heavy from day one).
 
-### 4.6 What We Offer (1 short paragraph)
+### 3.6 Work Details Block
+Include a short block near the top with: **Employment type**, **Work arrangement**, **Location** (Riyadh by default), and **Reports to** (if inferrable, else leave placeholder).
+
+### 3.7 What We Offer (1 short paragraph)
 Employer value proposition tied to the division. What's genuinely differentiated about working here at this level.
 
-### 4.7 Bias & Inclusivity Audit
+### 3.8 Bias & Inclusivity Audit
 Before finalizing, silently audit the draft for:
 - Gendered language (e.g. *"rockstar,"* *"aggressive,"* *"dominant"*) → replace with neutral alternatives
 - Inflated years of experience (e.g. asking for 10 yrs when 5 is sufficient) → adjust
@@ -126,7 +157,7 @@ Before finalizing, silently audit the draft for:
 
 ---
 
-## Step 5 — Produce the Artifact (PIF-Styled Word Document)
+## Step 4 — Produce the Artifact (PIF-Styled Word Document)
 
 Invoke the `docx` skill to generate a Word document following this structure and styling.
 
@@ -137,21 +168,25 @@ Invoke the `docx` skill to generate a Word document following this structure and
    - Subtitle: *"[Division] · [Level] · PIF"* (12pt, gray `595959`)
    - Horizontal line divider in PIF Green
 
-2. **Role Overview** — heading in PIF Green, 1–2 paragraphs in body gray
+2. **Work Details Block** — small table near the top
+   - Employment type · Work arrangement · Location · Reports to
+   - Fills in from the MCQ answers
 
-3. **Key Responsibilities** — heading in PIF Green, bulleted list
+3. **Role Overview** — heading in PIF Green, 1–2 paragraphs in body gray
 
-4. **Must-Have Qualifications** — heading in PIF Green, bulleted list
+4. **Key Responsibilities** — heading in PIF Green, bulleted list
 
-5. **Nice-to-Have Qualifications** — heading in PIF Green, bulleted list styled inside a tan-bordered callout box (`C4984F` border) to visually distinguish from must-haves
+5. **Must-Have Qualifications** — heading in PIF Green, bulleted list
 
-6. **30/60/90-Day Success Expectations** — 3-column table
+6. **Nice-to-Have Qualifications** — heading in PIF Green, bulleted list styled inside a tan-bordered callout box (`C4984F` border) to visually distinguish from must-haves
+
+7. **30/60/90-Day Success Expectations** — 3-column table
    - Header row: PIF Green fill, white text (*"First 30 Days"* / *"First 60 Days"* / *"First 90 Days"*)
    - Body rows: alternating white and light gray (`F2F2F2`)
 
-7. **What We Offer** — heading in PIF Green, 1 short paragraph
+8. **What We Offer** — heading in PIF Green, 1 short paragraph
 
-8. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
+9. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
 
 ### Styling specification
 
@@ -179,13 +214,13 @@ Invoke the `docx` skill to generate a Word document following this structure and
 - **Must-have list should be genuinely non-negotiable.** If in doubt, it's a nice-to-have.
 - **Inclusive by default.** Bias audit runs on every draft before saving.
 - **Show the ramp, not just the finish line.** 30/60/90-day expectations set realistic mutual expectations.
-- **Compensation is not included by default.** If the user wants it in the JD, they should specify — many PIF roles keep this off the public JD.
-- **Every JD is a preview, not a wish list.** The role should match what the successful candidate will actually do.
+- **Match responsibilities to team-scope.** IC roles emphasize delivery; management roles emphasize people development.
+- **Compensation is not included by default.** If the user wants it, they should specify — many PIF roles keep this off the public JD.
 
 ## Limitations
 
 - Cannot access real PIF role data — outputs are template drafts requiring hiring manager review.
-- Compensation, benefits, and contract-specific terms are not generated unless explicitly provided.
+- Compensation, benefits, and country-specific contract terms are not generated unless explicitly provided.
 - Not a substitute for legal review on protected-class language or country-specific labor requirements.
 - Assumes English-language output by default; ask the user if Arabic or another language is required.
 
