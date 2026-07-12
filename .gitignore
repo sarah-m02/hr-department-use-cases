@@ -1,0 +1,23 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local test artifacts
+*.docx
+*.xlsx
+*.pptx
+*.pdf
+!skills/**/templates/*.docx
+!skills/**/templates/*.xlsx
+!skills/**/templates/*.pptx
+
+# Environment / secrets
+.env
+.env.local
