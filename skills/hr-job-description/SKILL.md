@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses short MCQ context questions to gather any missing details, then produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -25,6 +25,20 @@ Activate on user messages that follow patterns like:
 
 ---
 
+## Workspace Convention
+
+This skill reads from and writes to a dedicated folder:
+
+**Base path:** `~/HR-Workspace/hr-job-description/`
+
+**Structure:**
+- `inputs/existing-jds/` — optional; drop an existing JD file here if you want it rewritten
+- `outputs/` — where the skill writes the generated JD
+
+**On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+
+---
+
 ## Step 1 — Preprocess: Extract Context Already in the Trigger
 
 **Before asking any questions**, scan the user's trigger message and extract:
@@ -32,7 +46,8 @@ Activate on user messages that follow patterns like:
 - **Role name / title** — always required, usually in the trigger (e.g. *"Senior Investment Analyst"*)
 - **Level / seniority** — often implied by the title (e.g. *"Senior"*, *"VP"*, *"Director"*, *"Manager"*, *"Head of"*)
 - **Division / business unit** — e.g. *"Real Estate"*, *"Investments"*, *"Corporate Functions"*, *"Technology"*
-- **Existing JD text pasted?** — if the trigger contains a full JD, treat this as a rewrite task and use the paste as the starting point
+- **Existing JD pasted?** — if the trigger contains a full JD, treat this as a rewrite task and use the paste as the starting point
+- **Existing JD in workspace folder?** — check `~/HR-Workspace/hr-job-description/inputs/existing-jds/`; if any files are present, offer to use them as the rewrite starting point
 
 Confirm what was extracted in one short message:
 
@@ -200,11 +215,16 @@ Invoke the `docx` skill to generate a Word document following this structure and
 | Table header text | White `FFFFFF` | Fund Light | 11pt bold |
 | Footer | Soft Gray `9A9A9A` | Fund Light | 8pt |
 
-### File naming
-`YYYYMMDD_JD_[Role_Slug].docx` — e.g., `20260712_JD_Senior_Investment_Analyst.docx`
+### File location and naming
+Save the file to:
+`~/HR-Workspace/hr-job-description/outputs/YYYYMMDD_JD_[Role_Slug].docx`
+
+Example: `~/HR-Workspace/hr-job-description/outputs/20260712_JD_Senior_Investment_Analyst.docx`
 
 ### Confirmation to user
-> *"Job description generated: `[filename]`. Saved to your working directory. Follows PIF visual styling."*
+> *"Job description generated:*
+> *`~/HR-Workspace/hr-job-description/outputs/[filename]`*
+> *Follows PIF visual styling."*
 
 ---
 

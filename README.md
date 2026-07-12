@@ -22,12 +22,32 @@ Each one is designed to:
 
 ## Installation
 
-Copy the `skills/` folder contents into your Claude Code skills directory:
+1. Copy the `skills/` folder contents into your Claude Code skills directory:
+   - **Windows:** `C:\Users\<you>\.claude\skills\`
+   - **macOS / Linux:** `~/.claude/skills/`
+2. Restart Claude Code — the skills will be discovered on startup.
 
-**Windows:** `C:\Users\<you>\.claude\skills\`
-**macOS / Linux:** `~/.claude/skills/`
+## Workspace Convention
 
-Restart Claude Code — the skills will be discovered on startup.
+Every skill in this repo reads inputs from and writes outputs to a shared workspace folder in the user's home directory:
+
+```
+~/HR-Workspace/
+├── hr-employee-retention/
+│   ├── inputs/exit-interviews/
+│   └── outputs/
+├── hr-job-description/
+│   ├── inputs/existing-jds/
+│   └── outputs/
+└── hr-candidate-assessment/
+    ├── inputs/job-descriptions/
+    ├── inputs/cvs/
+    └── outputs/
+```
+
+- Skills create these folders automatically on first invocation
+- User can provide input via **chat paste** or by **dropping files** into the relevant `inputs/` folder
+- All artifacts are written to the skill's `outputs/` folder with a `YYYYMMDD_...` filename convention
 
 ## Attribution
 

@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interview transcripts to identify why employees are leaving and recommends targeted retention actions. Collects transcripts and context interactively, then produces a PIF-styled Word document (retention report). Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews or diagnose attrition drivers.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -25,16 +25,35 @@ Activate on user messages that follow patterns like:
 
 ---
 
-## Step 1 — Ask for the Transcripts
+## Workspace Convention
+
+This skill reads from and writes to a dedicated folder:
+
+**Base path:** `~/HR-Workspace/hr-employee-retention/`
+
+**Structure:**
+- `inputs/exit-interviews/` — where the user drops transcript files
+- `outputs/` — where the skill writes the retention report
+
+**On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+
+---
+
+## Step 1 — Ask for the Transcripts (Two Input Modes)
 
 Immediately after being triggered, post this message in chat:
 
 > **To produce your retention report, please provide your exit interview transcripts.**
 >
-> Accepted input methods:
-> - **Paste them directly here in chat** — simplest, works fine for most cases
-> - **Attach a document** — Word (`.docx`), PDF (`.pdf`), or plain text (`.txt`)
-> - Any internal format works within them — structured Q&A, bullet notes, or free-flowing text
+> Choose either input mode:
+>
+> **Option A — Chat paste**
+> Paste transcripts directly in this chat (any format: structured Q&A, bullet notes, or free-flowing text).
+>
+> **Option B — Drop files into the workspace folder**
+> Place transcript files (Word `.docx`, PDF `.pdf`, or plain text `.txt`) into:
+> `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/`
+> Then reply here with "**done**" or "**ready**".
 >
 > Guidance:
 > - Aim for 3 or more transcripts (fewer produces individual case notes, not organizational patterns)
@@ -42,7 +61,10 @@ Immediately after being triggered, post this message in chat:
 >
 > Once received, I'll ask a few short questions to frame the report.
 
-Wait for the user to provide the transcripts before moving on. If they provide fewer than 3, warn them:
+**When the user replies:**
+- If they pasted text → use that as the input
+- If they said "done" or "ready" → scan `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/` and read every file present, ingesting each as a transcript
+- If both modes were used, combine them If they provide fewer than 3, warn them:
 > *"You've shared [N] transcript(s). Pattern analysis is unreliable below 3 — do you want to add more, or should I proceed with a single-case note instead?"*
 
 ---
@@ -202,11 +224,16 @@ Invoke the `docx` skill to generate a Word document following this structure and
 | Callout box borders | PIF Green `005C4D` | — | — |
 | Footer | Soft Gray `9A9A9A` | Fund Light | 8pt |
 
-### File naming
-`YYYYMMDD_Retention_Report_[Division].docx` — e.g., `20260712_Retention_Report_Investments.docx`
+### File location and naming
+Save the file to:
+`~/HR-Workspace/hr-employee-retention/outputs/YYYYMMDD_Retention_Report_[Division].docx`
+
+Example: `~/HR-Workspace/hr-employee-retention/outputs/20260712_Retention_Report_Investments.docx`
 
 ### Confirmation to user
-> *"Retention report generated: `[filename]`. Saved to your working directory. Follows PIF visual styling."*
+> *"Retention report generated:*
+> *`~/HR-Workspace/hr-employee-retention/outputs/[filename]`*
+> *Follows PIF visual styling."*
 
 ---
 

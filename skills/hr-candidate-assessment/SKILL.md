@@ -2,7 +2,7 @@
 name: hr-candidate-assessment
 description: Assesses candidates against a role by parsing their CVs, scoring against a role-specific rubric, and producing a ranked long-list with per-candidate scorecards. Uses blind review to reduce bias. Produces PIF-styled Word document (rubric + methodology) and Excel scorecard (ranked candidates with per-dimension scores). Trigger phrases include "assess candidates for [role]", "screen CVs for [role]", "rank these candidates for [role]", "candidate assessment for [role]", or when the user asks to evaluate or shortlist applicants.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   attribution: Adapted from the CV Validation & Candidate Screening skill (MCP Market). Restructured into an interactive Claude Code flow, adapted to produce PIF-styled Word and Excel artifacts, and integrated with our established trigger-preprocessing + MCQ pattern. Standard HR practices (blind review, weighted rubrics, tiered ranking) are common to the field.
 ---
 
@@ -22,6 +22,21 @@ Activate on user messages that follow patterns like:
 - *"Candidate assessment for [role] in [division]"*
 - *"Shortlist for [role]"*
 - Or any explicit request to evaluate or rank candidates against a role.
+
+---
+
+## Workspace Convention
+
+This skill reads from and writes to a dedicated folder:
+
+**Base path:** `~/HR-Workspace/hr-candidate-assessment/`
+
+**Structure:**
+- `inputs/job-descriptions/` — drop the target role's JD file here
+- `inputs/cvs/` — drop candidate CV files here
+- `outputs/` — where the skill writes the rubric (Word) and scorecard (Excel)
+
+**On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
 
 ---
 
@@ -88,10 +103,29 @@ Then proceed to Step 3.
 
 ---
 
-## Step 3 — Optional JD Input
+## Step 3 — Optional JD Input (Two Input Modes)
 
-Wait for the user to either paste a JD, attach a document (Word `.docx`, PDF `.pdf`, text `.txt`), or say "skip."
+Post this message in chat:
 
+> **Do you have a job description to feed in?** It will make the rubric sharper.
+>
+> **Option A — Chat paste**
+> Paste the JD text directly here, or attach a file (Word `.docx`, PDF `.pdf`, text `.txt`).
+>
+> **Option B — Drop into workspace folder**
+> Place the JD file into:
+> `~/HR-Workspace/hr-candidate-assessment/inputs/job-descriptions/`
+> Then reply here with "**done**" or "**ready**".
+>
+> **Option C — Skip**
+> Say "**skip**" and I'll generate the rubric from role + level + division alone.
+
+**When the user replies:**
+- If they pasted or attached → use that content
+- If they said "done" or "ready" → scan `~/HR-Workspace/hr-candidate-assessment/inputs/job-descriptions/` and read the first file present
+- If they said "skip" → proceed with role + level + division
+
+Behavior:
 - **If JD provided:** parse its must-have, should-have, and nice-to-have requirements; use them to shape the rubric
 - **If skipped:** generate the rubric from role + level + division alone, using standard competency assumptions for that level
 
@@ -136,20 +170,30 @@ Confirm the rubric with the user briefly before moving on:
 
 ---
 
-## Step 5 — Accept Candidate CV Uploads
+## Step 5 — Collect Candidate CVs (Two Input Modes)
 
-Prompt the user:
+Post this message in chat:
 
-> **Please upload the candidate CVs to evaluate.**
+> **Please provide the candidate CVs to evaluate.**
 >
-> Accepted formats:
-> - Word (`.docx`)
-> - PDF (`.pdf`)
-> - Plain text (`.txt`)
+> Accepted formats: Word (`.docx`), PDF (`.pdf`), or plain text (`.txt`).
+>
+> **Option A — Chat upload**
+> Attach or paste CVs directly in this chat.
+>
+> **Option B — Drop into workspace folder**
+> Place all CV files into:
+> `~/HR-Workspace/hr-candidate-assessment/inputs/cvs/`
+> Then reply here with "**done**" or "**ready**".
 >
 > Batch size: 3–20 candidates works best. For very small batches, ranking still applies but statistical patterns won't be reliable.
 
-Wait for uploads. When received, invoke the `pdf` skill (for PDFs) or `docx` skill (for Word) to extract text from each CV.
+**When the user replies:**
+- If they attached files in chat → use those
+- If they said "done" or "ready" → scan `~/HR-Workspace/hr-candidate-assessment/inputs/cvs/` and read every file present
+- If both modes were used, combine them
+
+For each file: invoke the `pdf` skill (for PDFs) or `docx` skill (for Word) to extract text.
 
 ---
 
@@ -265,12 +309,17 @@ Columns (in order):
 
 For each candidate: a small structured block with per-dimension score AND the specific CV quote or reference that supports that score. This is the auditable evidence trail.
 
-### File Naming
+### File location and naming
+Save both files to:
+`~/HR-Workspace/hr-candidate-assessment/outputs/`
+
 - `YYYYMMDD_Assessment_Rubric_[Role_Slug].docx`
 - `YYYYMMDD_Scorecard_[Role_Slug].xlsx`
 
-### Confirmation to User
-> *"Done. Two files generated:*
+Example: `~/HR-Workspace/hr-candidate-assessment/outputs/20260712_Assessment_Rubric_Senior_Investment_Analyst.docx`
+
+### Confirmation to user
+> *"Done. Two files generated in `~/HR-Workspace/hr-candidate-assessment/outputs/`:*
 > *• `[rubric filename]` — the scoring methodology and rubric*
 > *• `[scorecard filename]` — the ranked candidate list with per-dimension scores and evidence*
 >
