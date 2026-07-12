@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interview transcripts to identify why employees are leaving and recommends targeted retention actions. Collects transcripts and context interactively, then produces a PIF-styled Word document (retention report). Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews or diagnose attrition drivers.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -25,26 +25,48 @@ Activate on user messages that follow patterns like:
 
 ---
 
-## Step 1 — Ask for the Transcripts (chat input)
+## Step 1 — Ask for the Transcripts
 
 Immediately after being triggered, post this message in chat:
 
-> **To produce your retention report, please paste your exit interview transcripts here.**
+> **To produce your retention report, please provide your exit interview transcripts.**
 >
-> - Any format works — structured Q&A, bullet notes, or free-flowing text
+> Accepted input methods:
+> - **Paste them directly here in chat** — simplest, works fine for most cases
+> - **Attach a document** — Word (`.docx`), PDF (`.pdf`), or plain text (`.txt`)
+> - Any internal format works within them — structured Q&A, bullet notes, or free-flowing text
+>
+> Guidance:
 > - Aim for 3 or more transcripts (fewer produces individual case notes, not organizational patterns)
-> - Names / identifying details can be anonymized before pasting
+> - Names or identifying details can be anonymized before sharing
 >
-> Once pasted, I'll ask a few short questions to frame the report.
+> Once received, I'll ask a few short questions to frame the report.
 
-Wait for the user to paste before moving on. If they paste fewer than 3, warn them:
+Wait for the user to provide the transcripts before moving on. If they provide fewer than 3, warn them:
 > *"You've shared [N] transcript(s). Pattern analysis is unreliable below 3 — do you want to add more, or should I proceed with a single-case note instead?"*
 
 ---
 
-## Step 2 — Gather Framing Inputs (via `AskUserQuestion`)
+## Step 2 — Preprocess: Reuse Any Context Already Provided
 
-Once the user has pasted the transcripts, use the `AskUserQuestion` tool to collect the three framing inputs in a single interactive prompt. Do NOT ask these in free-text chat — use the tool so the user can click through them.
+Before invoking `AskUserQuestion`, **scan the user's original trigger message** and the surrounding chat for context that already answers the framing questions. This prevents asking for information the user has already stated.
+
+Explicitly check for:
+- **Division / business unit** — e.g., *"Investments Division"*, *"Real Estate"*, *"Corporate Functions"*, *"Technology"* → if mentioned, skip Question 1
+- **Time period** — e.g., *"Q1 2026"*, *"last quarter"*, *"first half"*, *"last 6 months"* → if mentioned, skip Question 2
+- **Recipient** — e.g., *"for the division head"*, *"for the CHRO"*, *"my HRBP"* → if mentioned, skip Question 3
+
+Confirm what was extracted in a single short message before moving on:
+
+> *"Noted from your request: Division = [X], Time Period = [Y]. I'll ask about the remaining framing detail(s) next."*
+
+If **all three** framing inputs are already stated in the trigger, skip Step 3 entirely and proceed to Step 4 (Analysis) after confirming what was extracted.
+
+---
+
+## Step 3 — Gather Any Missing Framing Inputs (via `AskUserQuestion`)
+
+For any framing input NOT already provided in the trigger, use the `AskUserQuestion` tool. Do NOT ask these in free-text chat — use the tool so the user can click through them.
 
 Call `AskUserQuestion` with these three questions:
 
@@ -91,11 +113,11 @@ Then proceed to Step 3.
 
 ---
 
-## Step 3 — Analyze the Transcripts
+## Step 4 — Analyze the Transcripts
 
 Apply the following analytical framework. Every claim in the output must trace to a specific quote.
 
-### 3.1 Extract themes and categorize by driver
+### 4.1 Extract themes and categorize by driver
 Group findings under these standard driver categories (add others only if a genuinely distinct theme emerges):
 
 - **Compensation** — pay level, bonus, equity, benefits
@@ -106,18 +128,18 @@ Group findings under these standard driver categories (add others only if a genu
 - **Leadership / strategy** — trust in direction, confidence in leaders
 - **Other** — anything genuinely outside the above
 
-### 3.2 Rank each theme
+### 4.2 Rank each theme
 For every theme:
 - **Frequency** — how many of the transcripts raised it
 - **Severity** — how central it was to the person's decision to leave (surface complaint vs. root cause)
 
-### 3.3 Distinguish surface complaints from root causes
+### 4.3 Distinguish surface complaints from root causes
 Cluster related themes and identify the underlying issue. For example, if "comp" and "growth" both surface, the root cause is often *opaque career progression*, not compensation per se. Name the root causes explicitly — this is the most valuable part of the analysis.
 
-### 3.4 Identify preserving signals
+### 4.4 Identify preserving signals
 Note what departing employees praised. These are things the organization should NOT change while addressing the negatives.
 
-### 3.5 Recommend ranked actions
+### 4.5 Recommend ranked actions
 Produce 3–5 concrete recommendations, ranked by:
 - Impact (how many departures it would have prevented)
 - Speed (30 / 60 / 90 days to implement)
@@ -125,12 +147,12 @@ Produce 3–5 concrete recommendations, ranked by:
 
 Each recommendation must include: owner, timeline, cost bracket, and expected impact.
 
-### 3.6 Draft talking points for the business leader (only if recipient specified)
+### 4.6 Draft talking points for the business leader (only if recipient specified)
 A 3–5 line narrative the HRBP can bring to the recipient, framing the findings as "N exits, M root causes, K proposed actions."
 
 ---
 
-## Step 4 — Produce the Artifact (PIF-Styled Word Document)
+## Step 5 — Produce the Artifact (PIF-Styled Word Document)
 
 Invoke the `docx` skill to generate a Word document following this structure and styling.
 
