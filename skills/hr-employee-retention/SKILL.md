@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis and two distinct quantitative visuals — a workplace-experience matrix (day-to-day experience per respondent) and a departure-reasons chart (why they left). Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.9.1"
+  version: "1.9.2"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -231,7 +231,7 @@ Invoke the `docx` skill to generate a Word document following this structure and
    - Horizontal line divider in PIF Green
 
 2. **Executive summary** — 1 short paragraph
-   Frame: N respondents / interviews analyzed, K root causes identified, top M actions recommended.
+   Frame: N departures analysed, followed by explicit input counts (**"inputs comprised X exit interviews and Y exit surveys"** — spell the two counts out separately, do NOT collapse them into a parenthetical "n = X each" or similar shorthand), then K root causes identified, then top M actions recommended.
 
 The two survey-derived visuals live in **separate sections** and answer different questions. Do NOT cluster them under a single "Survey results" heading, and do NOT introduce any combined interviews-plus-survey confirmation section.
 
@@ -245,7 +245,11 @@ The two survey-derived visuals live in **separate sections** and answer differen
      - Value **from 3 up to but not including 4** (i.e. 3 ≤ v < 4) → Gray `9A9A9A` (neutral)
      - Value **4 or higher** (up to 5) → PIF Green `005C4D` (strong)
    - Cell text: the numeric rating (integer for respondent cells, one decimal for `Avg`), white, centered
-   - Small in-chart legend showing the three color bands with meanings
+   - Small in-chart legend showing the three color bands. Use the exact wording below (compact math notation to mirror the cell rule):
+     - Red swatch → `< 3  Weak`
+     - Gray swatch → `3 – 3.9  Neutral`
+     - Green swatch → `≥ 4  Strong`
+     - Do NOT use `1–2 Weak` / `3 Neutral` / `4–5 Strong` — that older phrasing hides the fact that non-integer averages like 2.2 also fall in the red band.
    - Generated as 300 DPI PNG via matplotlib, embedded in the Word doc
    - Do NOT show a bar chart of dimension averages — the matrix subsumes it and preserves respondent-level detail (bimodality is important — e.g. manager quality is often a split, not a mean)
    - Do NOT include any overall / mean headline number and do NOT include any meta-commentary about why eNPS or other summary metrics were omitted
