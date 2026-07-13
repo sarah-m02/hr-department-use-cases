@@ -1,8 +1,8 @@
 ---
 name: hr-employee-retention
-description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and a multi-source confirmation table showing findings confirmed by both interviews and survey data. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
+description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis and two distinct quantitative visuals — a workplace-experience matrix (day-to-day experience per respondent) and a departure-reasons chart (why they left). Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.8.0"
+  version: "1.9.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -71,9 +71,19 @@ Immediately after being triggered, post ONLY this short message in chat. Do NOT 
 **Handling the user's response:**
 
 - **If they paste text** → save a copy to the appropriate subfolder (chat-input mirroring rule), then use as input
-- **If they said "done" or "ready"** → scan both `inputs/exit-interviews/` and `inputs/survey-data/` and read every file present
+- **If they said "done" or "ready"** → scan both `inputs/exit-interviews/` and `inputs/survey-data/` and read every file present. **Use the robust scan procedure below — never report empty on the strength of one listing.**
 - **If they said "generate the template"** → copy `templates/exit_survey_template.doc` to `outputs/exit_survey_template_[YYYYMMDD].doc` and confirm the path; stop here (user needs to distribute and collect responses before running analysis)
-- **If both interviews and survey data are present** → use both; the analysis will cross-reference them
+- **If both interviews and survey data are present** → use both
+
+### Robust input-scan procedure (MANDATORY)
+
+Terminal output can be truncated mid-command and a single empty listing is **not** proof that a folder is empty. Before ever telling the user "no files found," do all of the following:
+
+1. **First pass** — list files in each input subfolder directly (`Get-ChildItem <path> -File`).
+2. **If the first pass returns empty for either folder**, immediately run a **recursive scan of the entire workspace** (`Get-ChildItem $env:USERPROFILE\HR-Workspace -Recurse -File`). This is cheap and catches truncated output, files placed one level up, or files placed in a legacy sibling folder (e.g. `~/HR-Workspace/exit-surveys-and-interviews/`).
+3. **Only if the recursive scan also returns empty** may you report to the user that no inputs were found.
+4. **If the recursive scan finds candidate files outside the expected subfolders** (e.g., in a sibling directory), tell the user what you found and ask whether to use those files, rather than silently ignoring them.
+5. **If the user pushes back** ("check again", "they're there", "the old ones"), always re-run the recursive scan — do not repeat the failed narrow listing.
 
 **Silent behavior rules for this skill:**
 - Do NOT announce workspace folder creation
@@ -156,7 +166,7 @@ Apply the following analytical framework. Every claim must trace to specific evi
 Before running analysis, check what's available:
 - **Transcripts only** → run qualitative analysis (4.1–4.6 below); skip the survey sections in the report
 - **Survey data only** → run quantitative analysis (4.7–4.9); the report becomes survey-focused
-- **Both** → run all sections and add the cross-reference table (4.10) — this is the richest report
+- **Both** → run all sections — the two quantitative visuals live in their own sections; do NOT combine them into a joint interviews+survey confirmation section
 
 ### 4.1 Extract themes and categorize by driver *(if transcripts present)*
 Group findings under these standard driver categories (add others only if a genuinely distinct theme emerges):
@@ -205,10 +215,7 @@ For each driver dimension:
 - **Strong** — ≥ 4.0 → preserve
 
 ### 4.9 Extract departure reasons (if the template captures them)
-Count the top-selected departure reasons across respondents. Rank highest → lowest.
-
-### 4.10 Multi-source confirmation *(only if both inputs present)*
-For each driver dimension, check whether **both** interviews and survey ratings flag it as a problem. Include only the drivers where both sources agree in the multi-source confirmation table (section 5 of the artifact, placed after the theme table). Drop divergent signals from the report unless the analyst can articulate a specific hypothesis for the divergence.
+Count the top-selected departure reasons across respondents. Rank highest → lowest. This is a distinct signal from the per-dimension ratings — do NOT collapse the two into a joint table.
 
 ---
 
@@ -226,42 +233,35 @@ Invoke the `docx` skill to generate a Word document following this structure and
 2. **Executive summary** — 1 short paragraph
    Frame: N respondents / interviews analyzed, K root causes identified, top M actions recommended.
 
-3. **Survey results (quantitative signal)** *(only if survey data present)* — visual dashboard section
+The two survey-derived visuals live in **separate sections** and answer different questions. Do NOT cluster them under a single "Survey results" heading, and do NOT introduce any combined interviews-plus-survey confirmation section.
 
-   Do NOT include any overall / mean headline number and do NOT include any meta-commentary explaining why eNPS or other metrics were omitted. Skip straight to the two charts below.
-
-   **3a. Driver ratings — how leavers rated each dimension** — horizontal bar chart
-   - Section caption (below heading, small text): *"Each bar is the average rating (1 to 5) that departing employees gave a workplace dimension. Lower ratings signal weaker areas that likely contributed to the exit."*
-   - One bar per survey dimension (Compensation, Career growth, Manager quality, Workload, Culture, Leadership, Learning and development, Recognition)
-   - Sort weakest to strongest, top to bottom (weakest driver appears at the top)
-   - Color-code each bar by score (traffic light):
-     - Score < 3.0 → Red `EB466C` (weak — action needed)
-     - Score 3.0 to 3.9 → Gray `9A9A9A` (neutral)
-     - Score ≥ 4.0 → PIF Green `005C4D` (strong — preserve)
-   - Include a small in-chart legend showing the three color bands with their meanings
-   - Reference line at 3.5 (dashed gray) as a visual midpoint
+3. **Workplace experience matrix** *(only if survey data present)* — quantitative view of the **day-to-day experience** (what was it like to work here?)
+   - Section caption (below heading, small text): *"Each cell shows how one departing employee rated one dimension of their workplace experience (1 = poor, 5 = excellent). Read across a row to see agreement across leavers; read down a column to see one leaver's full picture."*
+   - Format: heatmap / matrix, NOT a bar chart
+   - Rows: the 8 survey dimensions (Compensation, Career growth, Manager quality, Workload, Culture, Leadership, Learning and development, Recognition), sorted **by row-average ascending** so the weakest dimension is at the top
+   - Columns: one column per respondent (anonymized code, e.g. R1..RN), plus a rightmost `Avg` column showing the row mean
+   - Cell fill by rating (traffic light):
+     - Rating 1–2 → Red `EB466C` (weak)
+     - Rating 3 → Gray `9A9A9A` (neutral)
+     - Rating 4–5 → PIF Green `005C4D` (strong)
+   - Cell text: the numeric rating, white for red/green cells, dark gray for gray cells, centered
+   - Small in-chart legend showing the three color bands with meanings
    - Generated as 300 DPI PNG via matplotlib, embedded in the Word doc
+   - Do NOT show a bar chart of dimension averages — the matrix subsumes it and preserves respondent-level detail (bimodality is important — e.g. manager quality is often a split, not a mean)
+   - Do NOT include any overall / mean headline number and do NOT include any meta-commentary about why eNPS or other summary metrics were omitted
 
-   **3b. Departure reasons — frequency across respondents** — horizontal bar chart
-   - Section caption (below heading, small text): *"How often each reason was cited by departing employees. The OFM survey asks each respondent to select their top three reasons, so the chart can show more than three bars in total."*
-   - Sort most cited to least cited
-   - Top reason (single most-cited) in Tan `C4984F` (focal callout)
-   - All other reasons in Gray `9A9A9A` (context)
-   - Only include if the survey template captures departure reasons
-
-4. **Theme table (from exit interviews, qualitative)** — the core qualitative artifact *(only if transcripts present)*
+4. **Themes from exit interviews (qualitative signal)** *(only if transcripts present)* — the core qualitative artifact
+   - This is the **why they left** table
    - Columns: `Theme` | `Driver` | `Frequency` | `Severity` | `Evidence Quote`
    - Header row: PIF Green fill (`005C4D`), white text, bold
    - Body rows: alternating white and light gray (`F2F2F2`)
    - Evidence Quote column: italic, tan (`C4984F`)
 
-5. **Multi-source confirmation (interviews + survey)** *(only if both inputs are present, placed AFTER the theme table so the reader has already seen the qualitative themes)*
-   - Purpose: surface high-confidence findings — the intersection of qualitative themes and quantitative survey signal
-   - Shows only findings that BOTH interview themes AND survey ratings confirm as problem areas
-   - 2 columns: `Driver` · `Evidence (interview theme + survey score)`
-   - Do NOT include a "Confirmed by" column — every row in this table is confirmed by both sources by definition, so the column is redundant
-   - Row background: light green fill `E8F3F0` for all rows
-   - Drop rows where signals diverge, unless the analyst can state a specific hypothesis for the divergence
+5. **Departure reasons — frequency across respondents** *(only if survey data present and the survey captures reasons)* — quantitative view of the **stated triggers** for leaving; placed directly after the interview themes so the qualitative and quantitative "why they left" evidence sit together
+   - Section caption (below heading, small text): *"How often each reason was cited by departing employees. The OFM survey asks each respondent to select their top three reasons, so the chart can show more than three bars in total."*
+   - Horizontal bar chart, sorted most-cited to least-cited
+   - Top reason (single most-cited) in Tan `C4984F` (focal callout)
+   - All other reasons in Gray `9A9A9A` (context)
 
 6. **Root cause analysis** — 2–3 short paragraphs
    Section heading in PIF Green. Body in text gray (`595959`).
@@ -299,6 +299,17 @@ Save the file to:
 
 Example: `~/HR-Workspace/hr-employee-retention/outputs/20260712_Retention_Report_Investments.docx`
 
+### File-lock handling (MANDATORY)
+
+If the target `.docx` path is already open in Word, `Document.save()` will raise `PermissionError [Errno 13]`. Do NOT surface this raw error to the user. Instead:
+
+1. Wrap the `doc.save(path)` call in a try/except that catches `PermissionError`.
+2. On failure, retry automatically with a numeric suffix: `..._Retention_Report_[Division]_v2.docx`, then `_v3`, up to `_v9`.
+3. In the closing message, note the suffix used: *"Report created (saved as ...\_v2.docx because the previous version was open in Word)."*
+4. Only if all suffix retries fail (extremely unlikely) surface the underlying error and ask the user to close Word.
+
+This must be built into every generated report script — do not rely on the user closing the file first.
+
 ### Closing message to user (concise)
 
 After the file is saved, post **only** a short 3-line closing in chat. Do NOT dump the report content into chat — the doc contains it all.
@@ -310,7 +321,7 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 
 **Example:**
 > *"Report created.*
-> *6 exits analyzed from Real Estate Investments (Q2 2026), 3 confirmed drivers, 3 recommended actions.*
+> *6 exits analyzed from Real Estate Investments (Q2 2026), 3 root causes, 5 recommended actions.*
 > *[Open report](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-employee-retention/outputs/20260713_Retention_Report_RealEstateInvestments.docx)"*
 
 **Silent behavior rules for closing:**
