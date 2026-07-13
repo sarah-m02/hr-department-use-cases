@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and cross-reference between qualitative and quantitative signals. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -37,7 +37,7 @@ This skill reads from and writes to a dedicated folder:
 - `inputs/survey-data/` — where the user drops filled-in survey responses (Excel, CSV, or Word)
 - `outputs/` — where the skill writes the retention report
 
-**On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+**On first invocation:** create any missing folders **silently** — do NOT announce folder creation to the user.
 
 ---
 
@@ -55,52 +55,47 @@ This applies to every input the user provides, not only via chat — folder drop
 
 ---
 
-## Step 1 — Ask for Inputs (Multiple Sources Accepted)
+## Step 1 — Ask for Inputs (Concise Version)
 
-Immediately after being triggered, post this message in chat:
+Immediately after being triggered, post ONLY this short message in chat. Do NOT say "I'll set up the workspace" or "Created workspace folders" or "Noted from your request" — none of those. Go straight to the input request:
 
-> **To produce your retention report, please provide any combination of the following inputs:**
+> **Understood. Please provide the following to proceed:**
 >
-> **1. Exit interview transcripts** *(qualitative — post-departure conversations)*
-> - Paste in chat, or drop files into `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/`
-> - Any format works: Word, PDF, plain text, or structured Q&A
+> **1. Exit interview transcripts** — attach to chat or drop into `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/`
+> **2. Exit survey responses** — attach to chat or drop into `~/HR-Workspace/hr-employee-retention/inputs/survey-data/`
 >
-> **2. Exit survey responses** *(quantitative — rating-based feedback, following the WA State OFM template)*
-> - Drop filled-in Excel/CSV/Word files into `~/HR-Workspace/hr-employee-retention/inputs/survey-data/`
-> - Or paste tabular data in chat
-> - Don't have a survey yet? Reply "**generate the template**" and I'll put a blank copy in your `outputs/` folder for you to distribute
+> At least one input required; both together give the richest analysis. Say "**done**" once completed.
 >
-> **Guidance:**
-> - Aim for 3+ transcripts or 5+ survey responses for pattern reliability
-> - Names and identifying details can be anonymized before sharing
-> - Providing both interviews AND surveys produces the richest analysis (cross-references qualitative themes with quantitative scores)
->
-> When you're ready, reply "**done**" or paste content, and I'll ask a few framing questions.
+> Need a blank survey template? Reply "**generate the template**" and I'll put a copy in your `outputs/` folder.
 
 **Handling the user's response:**
 
 - **If they paste text** → save a copy to the appropriate subfolder (chat-input mirroring rule), then use as input
 - **If they said "done" or "ready"** → scan both `inputs/exit-interviews/` and `inputs/survey-data/` and read every file present
 - **If they said "generate the template"** → copy `templates/exit_survey_template.doc` to `outputs/exit_survey_template_[YYYYMMDD].doc` and confirm the path; stop here (user needs to distribute and collect responses before running analysis)
-- **If both interviews and survey data are present** → use both; the analysis will cross-reference them If they provide fewer than 3, warn them:
+- **If both interviews and survey data are present** → use both; the analysis will cross-reference them
+
+**Silent behavior rules for this skill:**
+- Do NOT announce workspace folder creation
+- Do NOT echo back extracted trigger context ("Noted: Division = X...")
+- Do NOT narrate setup steps
+- Just ask the user for what's needed, then act If they provide fewer than 3, warn them:
 > *"You've shared [N] transcript(s). Pattern analysis is unreliable below 3 — do you want to add more, or should I proceed with a single-case note instead?"*
 
 ---
 
-## Step 2 — Preprocess: Reuse Any Context Already Provided
+## Step 2 — Preprocess Silently
 
-Before invoking `AskUserQuestion`, **scan the user's original trigger message** and the surrounding chat for context that already answers the framing questions. This prevents asking for information the user has already stated.
+**Scan the user's original trigger message** for context that already answers framing questions. This happens silently — do NOT echo back what was extracted to the user.
 
-Explicitly check for:
-- **Division / business unit** — e.g., *"Investments Division"*, *"Real Estate"*, *"Corporate Functions"*, *"Technology"* → if mentioned, skip Question 1
-- **Time period** — e.g., *"Q1 2026"*, *"last quarter"*, *"first half"*, *"last 6 months"* → if mentioned, skip Question 2
-- **Recipient** — e.g., *"for the division head"*, *"for the CHRO"*, *"my HRBP"* → if mentioned, skip Question 3
+Silently check for:
+- **Division / business unit** — e.g., *"Investments Division"*, *"Real Estate"*, *"Corporate Functions"* → skip framing Question 1 if present
+- **Time period** — e.g., *"Q1 2026"*, *"last quarter"*, *"first half"* → skip framing Question 2 if present
+- **Recipient** — e.g., *"for the division head"*, *"for the CHRO"* → skip framing Question 3 if present
 
-Confirm what was extracted in a single short message before moving on:
+**Do NOT post a "Noted: Division = X" confirmation message.** Just internally hold the extracted values and use them when the framing MCQs are asked (Step 3, after inputs are received).
 
-> *"Noted from your request: Division = [X], Time Period = [Y]. I'll ask about the remaining framing detail(s) next."*
-
-If **all three** framing inputs are already stated in the trigger, skip Step 3 entirely and proceed to Step 4 (Analysis) after confirming what was extracted.
+If **all three** framing inputs are already stated in the trigger, skip Step 3 entirely and proceed to Step 4 (Analysis) once inputs are received.
 
 ---
 

@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses short MCQ context questions to gather any missing details, then produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -35,7 +35,7 @@ This skill reads from and writes to a dedicated folder:
 - `inputs/existing-jds/` — optional; drop an existing JD file here if you want it rewritten
 - `outputs/` — where the skill writes the generated JD
 
-**On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+**On first invocation:** create any missing folders **silently** — do NOT announce folder creation to the user.
 
 ---
 
@@ -61,11 +61,13 @@ Example: *"Received the JD. Saved a copy to `~/HR-Workspace/hr-job-description/i
 - **Existing JD pasted?** — if the trigger contains a full JD, treat this as a rewrite task and use the paste as the starting point
 - **Existing JD in workspace folder?** — check `~/HR-Workspace/hr-job-description/inputs/existing-jds/`; if any files are present, offer to use them as the rewrite starting point
 
-Confirm what was extracted in one short message:
+**Silent behavior rules:**
+- Do NOT post a "Noted: Role = X, Level = Y, Division = Z" confirmation message
+- Do NOT announce workspace folder creation
+- Do NOT narrate setup steps
+- Just extract silently and use the values when MCQs are asked
 
-> *"Noted: Role = [X], Level = [Y], Division = [Z]. A few quick context questions to make the JD sharper."*
-
-Then proceed to Step 2.
+Then proceed to Step 2 (which only asks for what wasn't extracted).
 
 ---
 

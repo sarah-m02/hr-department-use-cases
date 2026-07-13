@@ -2,7 +2,7 @@
 name: hr-candidate-assessment
 description: Assesses candidates against a role by parsing their CVs, scoring against a role-specific rubric, and producing a ranked long-list with per-candidate scorecards. Uses blind review to reduce bias. Produces PIF-styled Word document (rubric + methodology) and Excel scorecard (ranked candidates with per-dimension scores). Trigger phrases include "assess candidates for [role]", "screen CVs for [role]", "rank these candidates for [role]", "candidate assessment for [role]", or when the user asks to evaluate or shortlist applicants.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   attribution: Adapted from the CV Validation & Candidate Screening skill (MCP Market). Restructured into an interactive Claude Code flow, adapted to produce PIF-styled Word and Excel artifacts, and integrated with our established trigger-preprocessing + MCQ pattern. Standard HR practices (blind review, weighted rubrics, tiered ranking) are common to the field.
 ---
 
@@ -36,7 +36,7 @@ This skill reads from and writes to a dedicated folder:
 - `inputs/cvs/` — drop candidate CV files here
 - `outputs/` — where the skill writes the rubric (Word) and scorecard (Excel)
 
-**On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+**On first invocation:** create any missing folders **silently** — do NOT announce folder creation to the user.
 
 ---
 
@@ -63,11 +63,13 @@ Before asking any questions, scan the user's trigger and extract:
 - **Division / business unit** — e.g., *"Real Estate"*, *"Investments"*, *"Corporate Functions"*
 - **Any JD text pasted in the trigger** — use as the requirements source if provided
 
-Confirm what was extracted in one short message:
+**Silent behavior rules:**
+- Do NOT post a "Noted: Role = X, Level = Y, Division = Z" confirmation message
+- Do NOT announce workspace folder creation
+- Do NOT narrate setup steps
+- Just extract silently and use the values when MCQs are asked
 
-> *"Noted: Role = [X], Level = [Y], Division = [Z]. A few quick questions to tailor the rubric."*
-
-Then proceed to Step 2.
+Then proceed to Step 2 (which only asks for what wasn't extracted).
 
 ---
 
