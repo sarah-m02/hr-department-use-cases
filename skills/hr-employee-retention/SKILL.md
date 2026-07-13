@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and a multi-source confirmation table showing findings confirmed by both interviews and survey data. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -208,7 +208,7 @@ For each driver dimension:
 Count the top-selected departure reasons across respondents. Rank highest → lowest.
 
 ### 4.10 Multi-source confirmation *(only if both inputs present)*
-For each driver dimension, check whether **both** interviews and survey ratings flag it as a problem. Include only the drivers where both sources agree in the multi-source confirmation table (section 3d). Drop divergent signals from the report unless the analyst can articulate a specific hypothesis for the divergence.
+For each driver dimension, check whether **both** interviews and survey ratings flag it as a problem. Include only the drivers where both sources agree in the multi-source confirmation table (section 5 of the artifact, placed after the theme table). Drop divergent signals from the report unless the analyst can articulate a specific hypothesis for the divergence.
 
 ---
 
@@ -228,36 +228,26 @@ Invoke the `docx` skill to generate a Word document following this structure and
 
 3. **Survey results (quantitative signal)** *(only if survey data present)* — visual dashboard section
 
-   **3a. Overall Driver Average** — large color-coded headline number
-   - Format: big number as `X.X / 5` (e.g., *"3.1 / 5"*) at 36pt bold in the tier color, with small label below
-   - Color-coding by average score across all survey dimensions:
-     - Average ≥ 4.0 → PIF Green `005C4D`, label *"Strong"*
-     - Average 3.0 to 3.9 → Tan `C4984F`, label *"At risk zone"*
-     - Average < 3.0 → Red `EB466C`, label *"Weak"*
-   - This replaces eNPS, which does not add diagnostic value on a leaving cohort (structurally negative)
+   Do NOT include any overall / mean headline number and do NOT include any meta-commentary explaining why eNPS or other metrics were omitted. Skip straight to the two charts below.
 
-   **3b. Driver Bar Chart (survey)** — horizontal bar chart, one bar per survey dimension
-   - Sort worst to best from top to bottom
+   **3a. Driver ratings — how leavers rated each dimension** — horizontal bar chart
+   - Section caption (below heading, small text): *"Each bar is the average rating (1 to 5) that departing employees gave a workplace dimension. Lower ratings signal weaker areas that likely contributed to the exit."*
+   - One bar per survey dimension (Compensation, Career growth, Manager quality, Workload, Culture, Leadership, Learning and development, Recognition)
+   - Sort weakest to strongest, top to bottom (weakest driver appears at the top)
    - Color-code each bar by score (traffic light):
-     - Score < 3.0 → Red `EB466C` (weak)
+     - Score < 3.0 → Red `EB466C` (weak — action needed)
      - Score 3.0 to 3.9 → Gray `9A9A9A` (neutral)
-     - Score ≥ 4.0 → PIF Green `005C4D` (strong)
-   - Reference line at 3.5 (dashed gray)
+     - Score ≥ 4.0 → PIF Green `005C4D` (strong — preserve)
+   - Include a small in-chart legend showing the three color bands with their meanings
+   - Reference line at 3.5 (dashed gray) as a visual midpoint
    - Generated as 300 DPI PNG via matplotlib, embedded in the Word doc
 
-   **3c. Departure Reasons Breakdown (survey)** — horizontal bar chart
-   - Sort highest to lowest
-   - Top reason in Tan `C4984F` (focal callout)
+   **3b. Departure reasons — frequency across respondents** — horizontal bar chart
+   - Section caption (below heading, small text): *"How often each reason was cited by departing employees. The OFM survey asks each respondent to select their top three reasons, so the chart can show more than three bars in total."*
+   - Sort most cited to least cited
+   - Top reason (single most-cited) in Tan `C4984F` (focal callout)
    - All other reasons in Gray `9A9A9A` (context)
    - Only include if the survey template captures departure reasons
-
-   **3d. Multi-Source Confirmation (interviews + survey)** *(only if both inputs are present)*
-   - Shows findings that **both** interview themes AND survey ratings confirm as problem areas
-   - 3 columns: `Driver` · `Evidence (interview + survey)` · `Confirmed by`
-   - Row background: light green fill `E8F3F0` for all confirmed rows
-   - `Confirmed by` values: *"Both sources"* (default, the only rows included)
-   - Drop rows where signals diverge, unless the analyst can state a specific hypothesis for the divergence
-   - Purpose: give the reader high-confidence findings — the intersection of qualitative and quantitative signal
 
 4. **Theme table (from exit interviews, qualitative)** — the core qualitative artifact *(only if transcripts present)*
    - Columns: `Theme` | `Driver` | `Frequency` | `Severity` | `Evidence Quote`
@@ -265,22 +255,30 @@ Invoke the `docx` skill to generate a Word document following this structure and
    - Body rows: alternating white and light gray (`F2F2F2`)
    - Evidence Quote column: italic, tan (`C4984F`)
 
-5. **Root cause analysis** — 2–3 short paragraphs
+5. **Multi-source confirmation (interviews + survey)** *(only if both inputs are present, placed AFTER the theme table so the reader has already seen the qualitative themes)*
+   - Purpose: surface high-confidence findings — the intersection of qualitative themes and quantitative survey signal
+   - Shows only findings that BOTH interview themes AND survey ratings confirm as problem areas
+   - 2 columns: `Driver` · `Evidence (interview theme + survey score)`
+   - Do NOT include a "Confirmed by" column — every row in this table is confirmed by both sources by definition, so the column is redundant
+   - Row background: light green fill `E8F3F0` for all rows
+   - Drop rows where signals diverge, unless the analyst can state a specific hypothesis for the divergence
+
+6. **Root cause analysis** — 2–3 short paragraphs
    Section heading in PIF Green. Body in text gray (`595959`).
 
-6. **Preserving signals** — bullet list
+7. **Preserving signals** — bullet list
    Section heading in PIF Green.
 
-7. **Recommended actions** — numbered
+8. **Recommended actions** — numbered
    Each action in a light-bordered box (border `9A9A9A`). Action title in bold PIF Green. Rationale, owner, timeline, cost, expected impact as sub-bullets in gray.
 
-8. **Talking points for the recipient** — highlighted callout box (skip this section if the user chose "No specific recipient")
+9. **Talking points for the recipient** — highlighted callout box (skip this section if the user chose "No specific recipient")
    - Border: PIF Green
    - Background: very light gray `F8F8F8`
    - Text in body gray
 
-9. **Footer**
-   *"Confidential — HR use only"* in soft gray (`9A9A9A`), 8pt, right-aligned.
+10. **Footer**
+    *"Confidential — HR use only"* in soft gray (`9A9A9A`), 8pt, right-aligned.
 
 ### Styling specification
 
