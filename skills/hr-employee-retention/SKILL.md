@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis and two distinct quantitative visuals — a workplace-experience matrix (day-to-day experience per respondent) and a departure-reasons chart (why they left). Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.9.0"
+  version: "1.9.1"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -32,7 +32,7 @@ This skill reads from and writes to a dedicated folder:
 **Base path:** `~/HR-Workspace/hr-employee-retention/`
 
 **Structure:**
-- `templates/exit_survey_template.doc` — the WA State OFM exit interview template (public domain), users can copy and fill it
+- `templates/exit_survey_template.doc` — the exit survey template (public domain, adapted from WA State OFM), users can copy and fill it
 - `inputs/exit-interviews/` — where the user drops transcript files
 - `inputs/survey-data/` — where the user drops filled-in survey responses (Excel, CSV, or Word)
 - `outputs/` — where the skill writes the retention report
@@ -202,10 +202,10 @@ Each recommendation must include: owner, timeline, cost bracket, and expected im
 A 3–5 line narrative the HRBP can bring to the recipient, framing the findings as "N exits, M root causes, K proposed actions."
 
 ### 4.7 Compute survey summary metrics *(if survey data present)*
-Parse the filled-in OFM survey responses (Excel/CSV or extracted from Word). Compute:
+Parse the filled-in exit survey responses (Excel/CSV or extracted from Word). Compute:
 - **Overall satisfaction** — mean rating across all respondents
 - **eNPS score** — % promoters (9–10) minus % detractors (0–6), if the survey includes a recommend-to-work question
-- **Per-driver averages** — mean rating for each of the OFM survey dimensions
+- **Per-driver averages** — mean rating for each of the exit survey dimensions
 - **Response count and demographic split** — total respondents, breakdown by tenure or division if the template captured it
 
 ### 4.8 Identify weak and strong dimensions
@@ -236,19 +236,20 @@ Invoke the `docx` skill to generate a Word document following this structure and
 The two survey-derived visuals live in **separate sections** and answer different questions. Do NOT cluster them under a single "Survey results" heading, and do NOT introduce any combined interviews-plus-survey confirmation section.
 
 3. **Workplace experience matrix** *(only if survey data present)* — quantitative view of the **day-to-day experience** (what was it like to work here?)
-   - Section caption (below heading, small text): *"Each cell shows how one departing employee rated one dimension of their workplace experience (1 = poor, 5 = excellent). Read across a row to see agreement across leavers; read down a column to see one leaver's full picture."*
+   - Section caption (below heading, small text): *"Each cell shows how one departing employee rated one dimension of their workplace experience (1 = poor, 5 = excellent)."*
    - Format: heatmap / matrix, NOT a bar chart
    - Rows: the 8 survey dimensions (Compensation, Career growth, Manager quality, Workload, Culture, Leadership, Learning and development, Recognition), sorted **by row-average ascending** so the weakest dimension is at the top
    - Columns: one column per respondent (anonymized code, e.g. R1..RN), plus a rightmost `Avg` column showing the row mean
-   - Cell fill by rating (traffic light):
-     - Rating 1–2 → Red `EB466C` (weak)
-     - Rating 3 → Gray `9A9A9A` (neutral)
-     - Rating 4–5 → PIF Green `005C4D` (strong)
-   - Cell text: the numeric rating, white for red/green cells, dark gray for gray cells, centered
+   - Cell fill — the SAME traffic-light rule applies to individual respondent cells AND to the `Avg` column (this is important — average values like 2.2 or 2.3 must render red, not gray):
+     - Value **strictly less than 3** → Red `EB466C` (weak — problem area)
+     - Value **from 3 up to but not including 4** (i.e. 3 ≤ v < 4) → Gray `9A9A9A` (neutral)
+     - Value **4 or higher** (up to 5) → PIF Green `005C4D` (strong)
+   - Cell text: the numeric rating (integer for respondent cells, one decimal for `Avg`), white, centered
    - Small in-chart legend showing the three color bands with meanings
    - Generated as 300 DPI PNG via matplotlib, embedded in the Word doc
    - Do NOT show a bar chart of dimension averages — the matrix subsumes it and preserves respondent-level detail (bimodality is important — e.g. manager quality is often a split, not a mean)
    - Do NOT include any overall / mean headline number and do NOT include any meta-commentary about why eNPS or other summary metrics were omitted
+   - Do NOT use the word "leaver" or "leavers" anywhere in the section caption, chart labels, or legend — this term is banned across the skill's output. Use "departing employees" or "respondents" instead.
 
 4. **Themes from exit interviews (qualitative signal)** *(only if transcripts present)* — the core qualitative artifact
    - This is the **why they left** table
@@ -258,10 +259,11 @@ The two survey-derived visuals live in **separate sections** and answer differen
    - Evidence Quote column: italic, tan (`C4984F`)
 
 5. **Departure reasons — frequency across respondents** *(only if survey data present and the survey captures reasons)* — quantitative view of the **stated triggers** for leaving; placed directly after the interview themes so the qualitative and quantitative "why they left" evidence sit together
-   - Section caption (below heading, small text): *"How often each reason was cited by departing employees. The OFM survey asks each respondent to select their top three reasons, so the chart can show more than three bars in total."*
+   - Section caption (below heading, small text): *"How often each reason was cited by departing employees. The exit survey asks each respondent to select their top three reasons."*
    - Horizontal bar chart, sorted most-cited to least-cited
    - Top reason (single most-cited) in Tan `C4984F` (focal callout)
    - All other reasons in Gray `9A9A9A` (context)
+   - Do NOT use the word "leaver" or "leavers" and do NOT refer to the survey as the "OFM survey" — call it the "exit survey" throughout.
 
 6. **Root cause analysis** — 2–3 short paragraphs
    Section heading in PIF Green. Body in text gray (`595959`).
@@ -336,6 +338,9 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 
 ## Key Principles
 
+- **Terminology rules (MANDATORY).** In every generated artifact — report body, chart captions, chart labels, section headings, talking points, closing chat message — obey these:
+  - Never use the word "leaver" or "leavers." Use "departing employees" for narrative and "respondents" for survey-count contexts.
+  - Never refer to the survey as the "OFM survey," the "OFM exit survey," or "WA State OFM." Call it the "exit survey." The template's provenance can be acknowledged in workspace/README files but not in the deliverable.
 - **Every claim must be traceable.** No assertion in the report exists without a quote from the transcripts.
 - **Distinguish patterns from anecdotes.** If only 1 of 5 transcripts mentions something, flag it as a single-instance signal, not a theme.
 - **Root causes over surface complaints.** Cluster analysis is the value — comp complaints and growth complaints often point to the same underlying issue.
