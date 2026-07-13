@@ -2,7 +2,7 @@
 name: hr-candidate-assessment
 description: Assesses candidates against a role by parsing their CVs, scoring against a role-specific rubric, and producing a ranked long-list with per-candidate scorecards. Uses blind review to reduce bias. Produces PIF-styled Word document (rubric + methodology) and Excel scorecard (ranked candidates with per-dimension scores). Trigger phrases include "assess candidates for [role]", "screen CVs for [role]", "rank these candidates for [role]", "candidate assessment for [role]", or when the user asks to evaluate or shortlist applicants.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   attribution: Adapted from the CV Validation & Candidate Screening skill (MCP Market). Restructured into an interactive Claude Code flow, adapted to produce PIF-styled Word and Excel artifacts, and integrated with our established trigger-preprocessing + MCQ pattern. Standard HR practices (blind review, weighted rubrics, tiered ranking) are common to the field.
 ---
 
@@ -334,12 +334,28 @@ Save both files to:
 
 Example: `~/HR-Workspace/hr-candidate-assessment/outputs/20260712_Assessment_Rubric_Senior_Investment_Analyst.docx`
 
-### Confirmation to user
-> *"Done. Two files generated in `~/HR-Workspace/hr-candidate-assessment/outputs/`:*
-> *• `[rubric filename]` — the scoring methodology and rubric*
-> *• `[scorecard filename]` — the ranked candidate list with per-dimension scores and evidence*
->
-> *[N] candidates evaluated: [X] advance to interview, [Y] second-look, [Z] not moving forward."*
+### Closing message to user (concise)
+
+After both files are saved, post **only** a short closing in chat. Do NOT dump the rubric content, per-candidate scores, or the ranked list into chat — the artifacts contain all of it.
+
+**Format:**
+> *"Rubric and scorecard created.*
+> *[1-line summary — e.g. "N candidates evaluated for [Role]: X advance, Y second-look, Z not moving forward"]*
+> *[clickable markdown link to rubric]*
+> *[clickable markdown link to scorecard]"*
+
+**Example:**
+> *"Rubric and scorecard created.*
+> *5 candidates evaluated for Senior Investment Analyst: 2 advance, 2 second-look, 1 not moving forward.*
+> *[Open rubric](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-candidate-assessment/outputs/20260713_Rubric_Senior_Investment_Analyst.docx)*
+> *[Open scorecard](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-candidate-assessment/outputs/20260713_Scorecard_Senior_Investment_Analyst.xlsx)"*
+
+**Silent behavior rules for closing:**
+- Do NOT list per-dimension scores in chat
+- Do NOT paste evidence quotes or the ranked list in chat
+- Do NOT explain the rubric methodology in chat
+- The artifacts contain everything — the chat closing is just: files created + one-line summary + two clickable paths
+- Keep the closing under 5 lines total
 
 ---
 

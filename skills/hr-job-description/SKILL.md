@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses short MCQ context questions to gather any missing details, then produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -235,10 +235,26 @@ Save the file to:
 
 Example: `~/HR-Workspace/hr-job-description/outputs/20260712_JD_Senior_Investment_Analyst.docx`
 
-### Confirmation to user
-> *"Job description generated:*
-> *`~/HR-Workspace/hr-job-description/outputs/[filename]`*
-> *Follows PIF visual styling."*
+### Closing message to user (concise)
+
+After the file is saved, post **only** a short 3-line closing in chat. Do NOT dump the JD content into chat — the doc contains it all.
+
+**Format:**
+> *"JD created.*
+> *[1-line summary — e.g. "Senior Investment Analyst role for Real Estate, Riyadh-based, full-time"]*
+> *[clickable markdown link to the file]"*
+
+**Example:**
+> *"JD created.*
+> *Senior Investment Analyst, Real Estate Investments, full-time on-site Riyadh.*
+> *[Open JD](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-job-description/outputs/20260713_JD_Senior_Investment_Analyst.docx)"*
+
+**Silent behavior rules for closing:**
+- Do NOT paste the JD text into chat
+- Do NOT list the responsibilities, qualifications, or 30/60/90 in chat
+- Do NOT explain the bias audit in chat
+- The doc contains everything — the chat closing is just: doc created + one-line summary + clickable path
+- Keep the closing under 4 lines total
 
 ---
 

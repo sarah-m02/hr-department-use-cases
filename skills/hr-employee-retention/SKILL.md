@@ -2,7 +2,7 @@
 name: hr-employee-retention
 description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and a multi-source confirmation table showing findings confirmed by both interviews and survey data. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -301,10 +301,27 @@ Save the file to:
 
 Example: `~/HR-Workspace/hr-employee-retention/outputs/20260712_Retention_Report_Investments.docx`
 
-### Confirmation to user
-> *"Retention report generated:*
-> *`~/HR-Workspace/hr-employee-retention/outputs/[filename]`*
-> *Follows PIF visual styling."*
+### Closing message to user (concise)
+
+After the file is saved, post **only** a short 3-line closing in chat. Do NOT dump the report content into chat — the doc contains it all.
+
+**Format:**
+> *"Report created.*
+> *[1-line summary — e.g. "6 exits analyzed, 3 confirmed drivers, 3 recommended actions"]*
+> *[clickable markdown link to the file]"*
+
+**Example:**
+> *"Report created.*
+> *6 exits analyzed from Real Estate Investments (Q2 2026), 3 confirmed drivers, 3 recommended actions.*
+> *[Open report](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-employee-retention/outputs/20260713_Retention_Report_RealEstateInvestments.docx)"*
+
+**Silent behavior rules for closing:**
+- Do NOT list "Headline findings" in chat
+- Do NOT list "Root causes" in chat
+- Do NOT list "Top actions" in chat
+- Do NOT include tables, bullet lists of drivers, or analysis excerpts in chat
+- The doc contains all findings — the chat closing is just: doc created + one-line summary + clickable path
+- Keep the closing under 4 lines total
 
 ---
 
