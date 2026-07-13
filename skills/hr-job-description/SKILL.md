@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses short MCQ context questions to gather any missing details, then produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -36,6 +36,18 @@ This skill reads from and writes to a dedicated folder:
 - `outputs/` — where the skill writes the generated JD
 
 **On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+
+---
+
+## Chat-Input Mirroring Rule (Standard Behavior)
+
+**Whenever the user provides content in chat — either pasted text or an attached file — always save a copy to the appropriate `inputs/` subfolder before processing.**
+
+- **Text paste:** save as `YYYYMMDD_HHMMSS_[category].txt` in the correct subfolder (e.g., `inputs/existing-jds/`)
+- **Attachment:** save the file as-is to the correct subfolder, preserving the original filename
+- **Confirmation:** mention the saved path in chat so the user has an audit trail
+
+Example: *"Received the JD. Saved a copy to `~/HR-Workspace/hr-job-description/inputs/existing-jds/20260713_101452_existing-jd.txt`. Generating the rewrite now."*
 
 ---
 

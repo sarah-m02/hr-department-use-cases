@@ -2,7 +2,7 @@
 name: hr-candidate-assessment
 description: Assesses candidates against a role by parsing their CVs, scoring against a role-specific rubric, and producing a ranked long-list with per-candidate scorecards. Uses blind review to reduce bias. Produces PIF-styled Word document (rubric + methodology) and Excel scorecard (ranked candidates with per-dimension scores). Trigger phrases include "assess candidates for [role]", "screen CVs for [role]", "rank these candidates for [role]", "candidate assessment for [role]", or when the user asks to evaluate or shortlist applicants.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   attribution: Adapted from the CV Validation & Candidate Screening skill (MCP Market). Restructured into an interactive Claude Code flow, adapted to produce PIF-styled Word and Excel artifacts, and integrated with our established trigger-preprocessing + MCQ pattern. Standard HR practices (blind review, weighted rubrics, tiered ranking) are common to the field.
 ---
 
@@ -37,6 +37,20 @@ This skill reads from and writes to a dedicated folder:
 - `outputs/` — where the skill writes the rubric (Word) and scorecard (Excel)
 
 **On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
+
+---
+
+## Chat-Input Mirroring Rule (Standard Behavior)
+
+**Whenever the user provides content in chat — either pasted text or an attached file — always save a copy to the appropriate `inputs/` subfolder before processing.**
+
+- **Text paste:** save as `YYYYMMDD_HHMMSS_[category].txt` in the correct subfolder (e.g., `inputs/job-descriptions/` or `inputs/cvs/`)
+- **Attachment:** save the file as-is to the correct subfolder, preserving the original filename
+- **Confirmation:** mention the saved path in chat so the user has an audit trail
+
+Example: *"Received the JD. Saved a copy to `~/HR-Workspace/hr-candidate-assessment/inputs/job-descriptions/20260713_101452_pasted-jd.txt`. Now generating the rubric."*
+
+This applies to both JD inputs and CV uploads.
 
 ---
 

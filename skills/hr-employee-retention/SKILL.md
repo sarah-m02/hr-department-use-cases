@@ -1,8 +1,8 @@
 ---
 name: hr-employee-retention
-description: Analyzes exit interview transcripts to identify why employees are leaving and recommends targeted retention actions. Collects transcripts and context interactively, then produces a PIF-styled Word document (retention report). Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews or diagnose attrition drivers.
+description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and cross-reference between qualitative and quantitative signals. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -32,39 +32,57 @@ This skill reads from and writes to a dedicated folder:
 **Base path:** `~/HR-Workspace/hr-employee-retention/`
 
 **Structure:**
+- `templates/exit_survey_template.doc` — the WA State OFM exit interview template (public domain), users can copy and fill it
 - `inputs/exit-interviews/` — where the user drops transcript files
+- `inputs/survey-data/` — where the user drops filled-in survey responses (Excel, CSV, or Word)
 - `outputs/` — where the skill writes the retention report
 
 **On first invocation:** if any of these folders don't exist, create them silently before asking the user for input.
 
 ---
 
-## Step 1 — Ask for the Transcripts (Two Input Modes)
+## Chat-Input Mirroring Rule (Standard Behavior)
+
+**Whenever the user provides content in chat — either pasted text or an attached file — always save a copy to the appropriate `inputs/` subfolder before processing.**
+
+- **Text paste:** save as `YYYYMMDD_HHMMSS_[category].txt` in the correct subfolder (e.g., `inputs/exit-interviews/` or `inputs/survey-data/`)
+- **Attachment:** save the file as-is to the correct subfolder, preserving the original filename
+- **Confirmation:** mention the saved path in chat so the user has an audit trail
+
+Example: *"Received. Saved a copy to `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/20260713_101452_interviews.txt`. Analyzing now."*
+
+This applies to every input the user provides, not only via chat — folder drops go straight to the folder, but chat inputs must be mirrored there too.
+
+---
+
+## Step 1 — Ask for Inputs (Multiple Sources Accepted)
 
 Immediately after being triggered, post this message in chat:
 
-> **To produce your retention report, please provide your exit interview transcripts.**
+> **To produce your retention report, please provide any combination of the following inputs:**
 >
-> Choose either input mode:
+> **1. Exit interview transcripts** *(qualitative — post-departure conversations)*
+> - Paste in chat, or drop files into `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/`
+> - Any format works: Word, PDF, plain text, or structured Q&A
 >
-> **Option A — Chat paste**
-> Paste transcripts directly in this chat (any format: structured Q&A, bullet notes, or free-flowing text).
+> **2. Exit survey responses** *(quantitative — rating-based feedback, following the WA State OFM template)*
+> - Drop filled-in Excel/CSV/Word files into `~/HR-Workspace/hr-employee-retention/inputs/survey-data/`
+> - Or paste tabular data in chat
+> - Don't have a survey yet? Reply "**generate the template**" and I'll put a blank copy in your `outputs/` folder for you to distribute
 >
-> **Option B — Drop files into the workspace folder**
-> Place transcript files (Word `.docx`, PDF `.pdf`, or plain text `.txt`) into:
-> `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/`
-> Then reply here with "**done**" or "**ready**".
+> **Guidance:**
+> - Aim for 3+ transcripts or 5+ survey responses for pattern reliability
+> - Names and identifying details can be anonymized before sharing
+> - Providing both interviews AND surveys produces the richest analysis (cross-references qualitative themes with quantitative scores)
 >
-> Guidance:
-> - Aim for 3 or more transcripts (fewer produces individual case notes, not organizational patterns)
-> - Names or identifying details can be anonymized before sharing
->
-> Once received, I'll ask a few short questions to frame the report.
+> When you're ready, reply "**done**" or paste content, and I'll ask a few framing questions.
 
-**When the user replies:**
-- If they pasted text → use that as the input
-- If they said "done" or "ready" → scan `~/HR-Workspace/hr-employee-retention/inputs/exit-interviews/` and read every file present, ingesting each as a transcript
-- If both modes were used, combine them If they provide fewer than 3, warn them:
+**Handling the user's response:**
+
+- **If they paste text** → save a copy to the appropriate subfolder (chat-input mirroring rule), then use as input
+- **If they said "done" or "ready"** → scan both `inputs/exit-interviews/` and `inputs/survey-data/` and read every file present
+- **If they said "generate the template"** → copy `templates/exit_survey_template.doc` to `outputs/exit_survey_template_[YYYYMMDD].doc` and confirm the path; stop here (user needs to distribute and collect responses before running analysis)
+- **If both interviews and survey data are present** → use both; the analysis will cross-reference them If they provide fewer than 3, warn them:
 > *"You've shared [N] transcript(s). Pattern analysis is unreliable below 3 — do you want to add more, or should I proceed with a single-case note instead?"*
 
 ---
@@ -135,11 +153,17 @@ Then proceed to Step 3.
 
 ---
 
-## Step 4 — Analyze the Transcripts
+## Step 4 — Analyze the Inputs
 
-Apply the following analytical framework. Every claim in the output must trace to a specific quote.
+Apply the following analytical framework. Every claim must trace to specific evidence (transcript quote or survey score).
 
-### 4.1 Extract themes and categorize by driver
+### 4.0 Determine which inputs are present
+Before running analysis, check what's available:
+- **Transcripts only** → run qualitative analysis (4.1–4.6 below); skip the survey sections in the report
+- **Survey data only** → run quantitative analysis (4.7–4.9); the report becomes survey-focused
+- **Both** → run all sections and add the cross-reference table (4.10) — this is the richest report
+
+### 4.1 Extract themes and categorize by driver *(if transcripts present)*
 Group findings under these standard driver categories (add others only if a genuinely distinct theme emerges):
 
 - **Compensation** — pay level, bonus, equity, benefits
@@ -172,6 +196,28 @@ Each recommendation must include: owner, timeline, cost bracket, and expected im
 ### 4.6 Draft talking points for the business leader (only if recipient specified)
 A 3–5 line narrative the HRBP can bring to the recipient, framing the findings as "N exits, M root causes, K proposed actions."
 
+### 4.7 Compute survey summary metrics *(if survey data present)*
+Parse the filled-in OFM survey responses (Excel/CSV or extracted from Word). Compute:
+- **Overall satisfaction** — mean rating across all respondents
+- **eNPS score** — % promoters (9–10) minus % detractors (0–6), if the survey includes a recommend-to-work question
+- **Per-driver averages** — mean rating for each of the OFM survey dimensions
+- **Response count and demographic split** — total respondents, breakdown by tenure or division if the template captured it
+
+### 4.8 Identify weak and strong dimensions
+For each driver dimension:
+- **Weak** — average < 3.0/5 → flagged as a problem area
+- **Neutral** — 3.0–3.9 → context
+- **Strong** — ≥ 4.0 → preserve
+
+### 4.9 Extract departure reasons (if the template captures them)
+Count the top-selected departure reasons across respondents. Rank highest → lowest.
+
+### 4.10 Cross-reference themes and drivers *(only if both inputs present)*
+For each driver dimension, check whether:
+- **Aligned:** interview theme frequency AND survey score both signal a problem → validated pattern, act with confidence
+- **Divergent:** one signal shows a problem but the other doesn't → worth investigating why (may indicate silent issues in the survey or noise in the interviews)
+- **Not an issue:** neither signal flags it
+
 ---
 
 ## Step 5 — Produce the Artifact (PIF-Styled Word Document)
@@ -182,33 +228,63 @@ Invoke the `docx` skill to generate a Word document following this structure and
 
 1. **Header** (top of first page)
    - Title: *"Retention Report — [Division] — [Time Period]"* (20pt, PIF Green `005C4D`, bold, Fund Light with Calibri fallback)
-   - Subtitle: *"Exit Interview Analysis and Recommended Actions"* (12pt, gray `595959`)
+   - Subtitle: *"Exit Interview and Survey Analysis with Recommended Actions"* (12pt, gray `595959`)
    - Horizontal line divider in PIF Green
 
 2. **Executive summary** — 1 short paragraph
-   Frame: N exits analyzed, K root causes identified, top M actions recommended.
+   Frame: N respondents / interviews analyzed, K root causes identified, top M actions recommended.
 
-3. **Theme table** — the core artifact
+3. **Survey Snapshot** *(only if survey data present)* — visual dashboard section
+
+   **3a. eNPS Headline** — large color-coded number
+   - Score ≥ +30 → PIF Green `005C4D` = *"Strong"*
+   - Score 0 to +29 → Tan `C4984F` = *"Mixed"*
+   - Score < 0 → Red `EB466C` = *"At risk"*
+   - Format: big number (36pt bold in the tier color) with a small label below
+
+   **3b. Driver Bar Chart** — horizontal bar chart, one bar per survey dimension
+   - Sort worst → best from top to bottom
+   - Color-code each bar by score (traffic light):
+     - Score < 3.0 → Red `EB466C` (weak)
+     - Score 3.0–3.9 → Gray `9A9A9A` (neutral)
+     - Score ≥ 4.0 → PIF Green `005C4D` (strong)
+   - Reference line at 3.5 (dashed gray)
+   - Generated as 300 DPI PNG via matplotlib, embedded in the Word doc
+
+   **3c. Departure Reasons Breakdown** — horizontal bar chart
+   - Sort highest → lowest
+   - Top reason in Tan `C4984F` (focal callout)
+   - All other reasons in Gray `9A9A9A` (context)
+   - Only include if the survey template captures departure reasons
+
+   **3d. Cross-Reference Table** *(only if both interviews AND survey data are present)* — the most valuable output
+   - 4 columns: `Driver` · `Interview theme frequency` · `Survey score` · `Alignment`
+   - Row background color by alignment:
+     - **Aligned (both flag it)** → light green fill `E8F3F0`, evidence-backed action
+     - **Divergent** → light tan fill `F5EBD8`, worth investigating
+     - **Not an issue** → white
+
+4. **Theme table** — the core qualitative artifact *(only if transcripts present)*
    - Columns: `Theme` | `Driver` | `Frequency` | `Severity` | `Evidence Quote`
    - Header row: PIF Green fill (`005C4D`), white text, bold
    - Body rows: alternating white and light gray (`F2F2F2`)
    - Evidence Quote column: italic, tan (`C4984F`)
 
-4. **Root cause analysis** — 2–3 short paragraphs
+5. **Root cause analysis** — 2–3 short paragraphs
    Section heading in PIF Green. Body in text gray (`595959`).
 
-5. **Preserving signals** — bullet list
+6. **Preserving signals** — bullet list
    Section heading in PIF Green.
 
-6. **Recommended actions** — numbered
+7. **Recommended actions** — numbered
    Each action in a light-bordered box (border `9A9A9A`). Action title in bold PIF Green. Rationale, owner, timeline, cost, expected impact as sub-bullets in gray.
 
-7. **Talking points for the recipient** — highlighted callout box (skip this section if the user chose "No specific recipient")
+8. **Talking points for the recipient** — highlighted callout box (skip this section if the user chose "No specific recipient")
    - Border: PIF Green
    - Background: very light gray `F8F8F8`
    - Text in body gray
 
-8. **Footer**
+9. **Footer**
    *"Confidential — HR use only"* in soft gray (`9A9A9A`), 8pt, right-aligned.
 
 ### Styling specification
