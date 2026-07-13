@@ -1,8 +1,8 @@
 ---
 name: hr-employee-retention
-description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and cross-reference between qualitative and quantitative signals. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
+description: Analyzes exit interviews and employee satisfaction surveys to identify why employees are leaving and recommends targeted retention actions. Accepts transcripts, filled-in survey responses (based on the WA State OFM exit interview template), or both. Produces a PIF-styled Word document (retention report) with theme analysis, color-coded survey visualizations, and a multi-source confirmation table showing findings confirmed by both interviews and survey data. Trigger phrases include "why are [X] leaving [Y]", "understand why [X] are leaving the [Y] division", "analyze retention in [division]", "retention analysis for [division]", "build a retention report", or when the user asks to analyze exit interviews, exit surveys, or diagnose attrition drivers.
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
   attribution: Adapted from hr-employee-relations in tuanductran/hr-skills (MIT-licensed), scoped to exit-interview retention analysis and extended with interactive input collection and PIF-styled artifact output.
 ---
 
@@ -207,11 +207,8 @@ For each driver dimension:
 ### 4.9 Extract departure reasons (if the template captures them)
 Count the top-selected departure reasons across respondents. Rank highest → lowest.
 
-### 4.10 Cross-reference themes and drivers *(only if both inputs present)*
-For each driver dimension, check whether:
-- **Aligned:** interview theme frequency AND survey score both signal a problem → validated pattern, act with confidence
-- **Divergent:** one signal shows a problem but the other doesn't → worth investigating why (may indicate silent issues in the survey or noise in the interviews)
-- **Not an issue:** neither signal flags it
+### 4.10 Multi-source confirmation *(only if both inputs present)*
+For each driver dimension, check whether **both** interviews and survey ratings flag it as a problem. Include only the drivers where both sources agree in the multi-source confirmation table (section 3d). Drop divergent signals from the report unless the analyst can articulate a specific hypothesis for the divergence.
 
 ---
 
@@ -229,37 +226,40 @@ Invoke the `docx` skill to generate a Word document following this structure and
 2. **Executive summary** — 1 short paragraph
    Frame: N respondents / interviews analyzed, K root causes identified, top M actions recommended.
 
-3. **Survey Snapshot** *(only if survey data present)* — visual dashboard section
+3. **Survey results (quantitative signal)** *(only if survey data present)* — visual dashboard section
 
-   **3a. eNPS Headline** — large color-coded number
-   - Score ≥ +30 → PIF Green `005C4D` = *"Strong"*
-   - Score 0 to +29 → Tan `C4984F` = *"Mixed"*
-   - Score < 0 → Red `EB466C` = *"At risk"*
-   - Format: big number (36pt bold in the tier color) with a small label below
+   **3a. Overall Driver Average** — large color-coded headline number
+   - Format: big number as `X.X / 5` (e.g., *"3.1 / 5"*) at 36pt bold in the tier color, with small label below
+   - Color-coding by average score across all survey dimensions:
+     - Average ≥ 4.0 → PIF Green `005C4D`, label *"Strong"*
+     - Average 3.0 to 3.9 → Tan `C4984F`, label *"At risk zone"*
+     - Average < 3.0 → Red `EB466C`, label *"Weak"*
+   - This replaces eNPS, which does not add diagnostic value on a leaving cohort (structurally negative)
 
-   **3b. Driver Bar Chart** — horizontal bar chart, one bar per survey dimension
-   - Sort worst → best from top to bottom
+   **3b. Driver Bar Chart (survey)** — horizontal bar chart, one bar per survey dimension
+   - Sort worst to best from top to bottom
    - Color-code each bar by score (traffic light):
      - Score < 3.0 → Red `EB466C` (weak)
-     - Score 3.0–3.9 → Gray `9A9A9A` (neutral)
+     - Score 3.0 to 3.9 → Gray `9A9A9A` (neutral)
      - Score ≥ 4.0 → PIF Green `005C4D` (strong)
    - Reference line at 3.5 (dashed gray)
    - Generated as 300 DPI PNG via matplotlib, embedded in the Word doc
 
-   **3c. Departure Reasons Breakdown** — horizontal bar chart
-   - Sort highest → lowest
+   **3c. Departure Reasons Breakdown (survey)** — horizontal bar chart
+   - Sort highest to lowest
    - Top reason in Tan `C4984F` (focal callout)
    - All other reasons in Gray `9A9A9A` (context)
    - Only include if the survey template captures departure reasons
 
-   **3d. Cross-Reference Table** *(only if both interviews AND survey data are present)* — the most valuable output
-   - 4 columns: `Driver` · `Interview theme frequency` · `Survey score` · `Alignment`
-   - Row background color by alignment:
-     - **Aligned (both flag it)** → light green fill `E8F3F0`, evidence-backed action
-     - **Divergent** → light tan fill `F5EBD8`, worth investigating
-     - **Not an issue** → white
+   **3d. Multi-Source Confirmation (interviews + survey)** *(only if both inputs are present)*
+   - Shows findings that **both** interview themes AND survey ratings confirm as problem areas
+   - 3 columns: `Driver` · `Evidence (interview + survey)` · `Confirmed by`
+   - Row background: light green fill `E8F3F0` for all confirmed rows
+   - `Confirmed by` values: *"Both sources"* (default, the only rows included)
+   - Drop rows where signals diverge, unless the analyst can state a specific hypothesis for the divergence
+   - Purpose: give the reader high-confidence findings — the intersection of qualitative and quantitative signal
 
-4. **Theme table** — the core qualitative artifact *(only if transcripts present)*
+4. **Theme table (from exit interviews, qualitative)** — the core qualitative artifact *(only if transcripts present)*
    - Columns: `Theme` | `Driver` | `Frequency` | `Severity` | `Evidence Quote`
    - Header row: PIF Green fill (`005C4D`), white text, bold
    - Body rows: alternating white and light gray (`F2F2F2`)
