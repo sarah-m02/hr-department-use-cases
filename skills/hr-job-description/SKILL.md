@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions grounded in PIF-specific context (divisions, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -81,10 +81,20 @@ the user):
 - Never use the historical six-pool taxonomy ("Saudi Equity Holdings,"
   "Saudi Sector Development," etc.) in a 2026+ JD — the current structure
   is the three-portfolio framework (Vision / Strategic / Financial).
-- Never invent a corporate function department name (Legal, HR, Comms, etc.
-  are not enumerated on PIF's public site — see glossary §8 and §10).
+- Do NOT invent a department, division, sector, section, or team name
+  beyond what glossary §4 and §5 list. Many corporate functions ARE now
+  verified in §5 (Human Capital, Corporate Communications, Legal, Risk,
+  Compliance, Financial Accounting & Control Department, Investments
+  Strategy Division, People Development Department, PMO Governance and
+  Quality Team, PPA Department, Governor's Office, Shared Services, and
+  others) — use them verbatim when the role fits. If a needed unit is NOT
+  in §4/§5, do not invent it: ask the user via the "Other" free-text
+  fallback and use their answer verbatim.
 - Verbatim names of the six Vision Portfolio ecosystems (glossary §3) must
   be preserved exactly — no shortening, reordering, or renaming.
+- PIF's org hierarchy has five tiers (glossary §6): Portfolio → Ecosystem →
+  Sector → Division/Department → Section/Team. Anchor the JD at the most
+  specific verified tier available.
 
 If the glossary file is missing or empty, stop and tell the user in one
 line — the skill's PIF-grounding is not optional.
@@ -169,19 +179,19 @@ Use the `AskUserQuestion` tool to ask short multiple-choice questions in a singl
 
 - **header:** `Where it sits`
 - **question:** *"Where does this role sit in PIF?"*
-- **options (4):** built dynamically using **§10 of the PIF Glossary
+- **options (4):** built dynamically using **§12 of the PIF Glossary
   (`pif_context.md`)**. Match the role's title keywords against the tables
-  in §10 (A/B/C/D) and populate the four options in the order the glossary
+  in §12 (A/B/C/D) and populate the four options in the order the glossary
   prescribes. The fourth option is always `Other`. All options must be
   verbatim glossary terms — do NOT compress or paraphrase names.
 - **multiSelect:** false
 - **Do NOT** label any option as "Recommended."
-- **Do NOT** invent a corporate function name as an option. For roles that
-  cue a horizontal function (Legal, Finance, HR, Comms, Risk, Compliance,
-  Audit, Technology, Strategy, ESG, Procurement, etc.), the first option
-  MUST be `Corporate function or specialist team (please specify)` — and
-  when the user picks it, capture the team name via the tool's built-in
-  free-text "Other" fallback and use it verbatim in the JD.
+- **For corporate-function role keywords** (Legal, Finance, HR, Comms,
+  Risk, Compliance, Audit, Technology, Strategy, PMO, etc.), §12 table C
+  now supplies verified PIF department names as options (e.g. Human Capital
+  for HR-flavored roles; Legal, Risk, Compliance directly). Use these
+  verbatim. Only fall back to the "Other" free-text option if none of the
+  §12 table C rules match — never invent a department name.
 - **Do NOT** use the historical six-pool taxonomy in any 2026+ JD.
 - **Do NOT** use the word "pool" — PIF's own word is "portfolio."
 
@@ -292,8 +302,9 @@ Explain **why this role exists** and its impact on the business. Lead with the o
 
 - If the answer is **Vision Portfolio** or a specific ecosystem → paraphrase the description in glossary §2 and §3
 - If **Strategic Portfolio** or **Financial Portfolio** → paraphrase glossary §2
-- If a **named investment division** (International Investments Division, MENA Investments Division, Local Real Estate Investment Division) → reference the division by its verbatim glossary name (§4)
-- If **corporate function or specialist team (user-specified)** → use the user's verbatim team name; do NOT anchor to any PIF department that isn't in the glossary
+- If a **named investment division** (International Investments Division, MENA Investments Division, Local Real Estate Investment Division, Investments Strategy Division, Chief of Staff Division) → reference the division by its verbatim glossary name (§4)
+- If a **verified department or function** from glossary §5 (Human Capital, Corporate Communications, Legal, Risk, Compliance, People Development Department, Financial Accounting & Control Department, PMO Governance and Quality Team, PPA Department, Governor's Office, Shared Services, etc.) → reference it by its verbatim §5 name
+- If a **user-specified team** (via "Other" free-text) → use the user's verbatim team name; do NOT map to a guessed department
 
 Additionally weave in Stage B answers: the year-one problem from Question H (verbatim if the user typed free text) and the stakeholder set from Question I. Do NOT paste glossary language verbatim — paraphrase — but do NOT introduce PIF terms that aren't in the glossary.
 
@@ -312,12 +323,12 @@ Only genuinely required to perform the role from day 1. Do NOT inflate — every
 
 **Include a management-experience requirement only if the role manages people.**
 
-**Do NOT include a language requirement about Arabic** (see §8 of `pif_context.md` — Arabic handling is under separate testing and the JD stays silent on it). English is implicit and does not need to be listed.
+**Do NOT include a language requirement about Arabic** (see §11 of `pif_context.md` — Arabic handling is under separate testing and the JD stays silent on it). English is implicit and does not need to be listed.
 
 ### 4.4 Nice-to-Have Qualifications
 Things that would make a candidate stand out but are not required. Typically 3–5 items: adjacent skills, specific industry exposure, advanced degrees, exposure to specific PIF portfolio company sectors (mining, energy, real estate, tech, tourism) where genuinely relevant.
 
-**Do NOT list Arabic** here — even as nice-to-have — until the language-handling review is complete (see §8 of `pif_context.md`).
+**Do NOT list Arabic** here — even as nice-to-have — until the language-handling review is complete (see §11 of `pif_context.md`).
 
 **Why the split matters:** Research shows underrepresented candidates hesitate to apply when they don't meet every listed requirement. Separating must-have from nice-to-have materially widens the pool.
 
@@ -336,12 +347,12 @@ Include a short block near the top with: **Employment type**, **Work arrangement
 
 Employer value proposition. What's genuinely differentiated about working at PIF.
 
-**PIF-context integration (MANDATORY):** use only verbatim EVP language from glossary §7 (safe to quote or paraphrase). Where genuinely relevant, reference programs from glossary §6:
+**PIF-context integration (MANDATORY):** use only verbatim EVP language from glossary §9 (safe to quote or paraphrase). Where genuinely relevant, reference programs from glossary §8:
 - **PIF Academy** — safe to mention for any level
 - **Graduate Development Program (GDP)** — mention ONLY for entry-level roles that are Saudi-national-eligible; do NOT mention in senior or expat JDs
 - Do NOT mention "Faces of PIF," "azm," or "PIF Private Sector Hub" in a JD (they are marketing/programme assets, not role benefits)
 
-**Hard prohibitions (from glossary §7 and §11):**
+**Hard prohibitions (from glossary §10 and §11):**
 - Never emit specific comp figures, ranges, bonus structure, or allowance amounts
 - Never emit Vision 2030 target percentages, target dates, or Saudi national programme names (Saudization, Nitaqat, azm, HRDF, etc.)
 - Never quote specific AUM or headcount figures
@@ -359,7 +370,7 @@ Before finalizing, silently audit the draft for:
 - Credentials that aren't genuinely required (e.g. specific school, MBA-only) → move to nice-to-have or remove
 - Cultural assumptions (e.g. *"native English speaker"*) → replace with proficiency-based phrasing
 
-**PIF-content hard-rule audit (v1.6.0):** re-scan the entire draft for anything on the §6 / §10 "Do NOT" lists from `pif_context.md`:
+**PIF-content hard-rule audit:** re-scan the entire draft for anything on the §10 / §11 "Do NOT" lists from `pif_context.md`:
 - Any specific SAR/USD figure or comp band → remove
 - Any mention of "Saudization," "Nitaqat," or other named national programs → remove
 - Any Vision 2030 target percentage or year (e.g. *"70% by 2030"*) → remove
@@ -406,7 +417,7 @@ Invoke the `docx` skill to generate a Word document following this structure and
 
 9. **What We Offer** — heading in PIF Green, 1 short paragraph
 
-10. **Inclusion tagline** — new in v1.7.0 — one line above the footer, drawn verbatim (or paraphrased) from glossary §7 EVP language. Safe template: *"PIF empowers its people to make an impact and shape the future — we welcome candidates who bring diverse perspectives to that mission."* Style: 9pt italic, text gray `595959`, centered.
+10. **Inclusion tagline** — one line above the footer, drawn verbatim (or paraphrased) from glossary §9 EVP language. Safe template: *"PIF empowers its people to make an impact and shape the future — we welcome candidates who bring diverse perspectives to that mission."* Style: 9pt italic, text gray `595959`, centered.
 
 11. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
 
@@ -471,7 +482,7 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 - **Inclusive by default.** Bias audit runs on every draft before saving. The audit also covers PIF-content hard rules (comp, national programs, Vision 2030 phrasings, Arabic silence, named individuals).
 - **Show the ramp, not just the finish line.** 30/60/90-day expectations set realistic mutual expectations, anchored to the year-one problem from Stage B.
 - **Match responsibilities to team-scope.** IC roles emphasize delivery; management roles emphasize people development.
-- **Compensation is never included.** Not by default, not on request without explicit hiring-manager sign-off, and never as a range. See §6 of the reference file.
+- **Compensation is never included.** Not by default, not on request without explicit hiring-manager sign-off, and never as a range. See §11 of the reference file.
 - **The reference file is the source of truth for PIF facts.** Update `pif_context.md` rather than the skill body when PIF divisions, programs, or EVP language change.
 
 ## Limitations
