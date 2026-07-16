@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions grounded in PIF-specific context (divisions, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -51,31 +51,43 @@ Example: *"Received the JD. Saved a copy to `~/HR-Workspace/hr-job-description/i
 
 ---
 
-## Step 0 — Consult the PIF Context Reference (MANDATORY, silent)
+## Step 0 — Consult the PIF Glossary (MANDATORY, silent)
 
 Before any other step, silently load and internalize:
 
 **`~/.claude/skills/hr-job-description/references/pif_context.md`**
 
-This file defines PIF's divisions, EVP language, tone words, "flavor" snippets
-per division, division-inference hints for the MCQ, and — critically — the
-**hard rules** the skill MUST obey (§10 of the reference file). Every
-downstream step must respect those hard rules.
+**Treat this file as a strict GLOSSARY, not a description.** Every PIF-specific
+term in the JD (division name, portfolio name, ecosystem name, program name,
+tagline, EVP phrase) must appear in that glossary. If a PIF-specific term
+is needed and it is not in the glossary → **do NOT invent one**. Either
+ask the user to provide it (via the AskUserQuestion "Other" free-text
+fallback) or omit the reference entirely. This is the single most important
+rule in v1.7.0.
 
-Key rules to internalise from the reference (do NOT restate them to the user):
+Key hard rules to internalise from the glossary (do NOT restate them to
+the user):
 
 - Never emit specific comp figures, bonus structure, allowance amounts, or
   vacation-day counts.
 - Never emit Vision 2030 target percentages, target dates, or the names of
-  national programmes (Saudization, Nitaqat, etc.).
-- Never name individuals (governor, chair) in the JD body.
+  Saudi national programmes (Saudization, Nitaqat, azm, HRDF, etc.).
+- Never name individuals (Governor, Chairman, Deputy Governor, division heads)
+  in the JD body.
 - Never quote specific AUM or headcount figures.
-- Never assert Arabic as a required, preferred, or optional language — the
-  JD stays silent on Arabic for now.
+- Never assert Arabic as a required, preferred, or optional language.
 - Never label any MCQ option as "Recommended" — ordering is signal enough.
+- Never use the word "pool" — PIF's own word is "portfolio."
+- Never use the historical six-pool taxonomy ("Saudi Equity Holdings,"
+  "Saudi Sector Development," etc.) in a 2026+ JD — the current structure
+  is the three-portfolio framework (Vision / Strategic / Financial).
+- Never invent a corporate function department name (Legal, HR, Comms, etc.
+  are not enumerated on PIF's public site — see glossary §8 and §10).
+- Verbatim names of the six Vision Portfolio ecosystems (glossary §3) must
+  be preserved exactly — no shortening, reordering, or renaming.
 
-If the reference file is missing, warn the user in one line and stop — the
-skill's PIF-grounding is not optional.
+If the glossary file is missing or empty, stop and tell the user in one
+line — the skill's PIF-grounding is not optional.
 
 ---
 
@@ -153,23 +165,25 @@ Use the `AskUserQuestion` tool to ask short multiple-choice questions in a singl
   - `C-suite / Executive (15+ yrs)`
 - **multiSelect:** false
 
-### Question E — Division *(only if not in trigger — uses the Smart Division rule)*
+### Question E — Portfolio, division, or team *(only if not in trigger — uses the glossary-driven Smart Division rule)*
 
-- **header:** `Division`
-- **question:** *"Which division is this role in?"*
-- **options (4):** built dynamically using §5 of the PIF context reference file
-  (`pif_context.md`). Match the role's title / keywords against the
-  Division-inference-hints table and populate the first three options with
-  the top-guess, second-guess, and third-guess divisions in that order. The
-  fourth option is always `Other divisions`. If no keyword rule fires, use
-  the fallback pool listed at the end of §5 (Saudi Sector Development ·
-  Corporate Communications · Human Capital · Strategy and Insights · Other).
+- **header:** `Where it sits`
+- **question:** *"Where does this role sit in PIF?"*
+- **options (4):** built dynamically using **§10 of the PIF Glossary
+  (`pif_context.md`)**. Match the role's title keywords against the tables
+  in §10 (A/B/C/D) and populate the four options in the order the glossary
+  prescribes. The fourth option is always `Other`. All options must be
+  verbatim glossary terms — do NOT compress or paraphrase names.
 - **multiSelect:** false
-- **Do NOT** label any option as "Recommended." Ordering is signal enough.
-- **Do NOT** collapse pool names into the old three-bucket taxonomy
-  (Investments / Corporate Functions / Technology) — the JD's Role Overview
-  depends on knowing the specific PIF pool or function so it can pull the
-  right flavor snippet from §9 of the reference file.
+- **Do NOT** label any option as "Recommended."
+- **Do NOT** invent a corporate function name as an option. For roles that
+  cue a horizontal function (Legal, Finance, HR, Comms, Risk, Compliance,
+  Audit, Technology, Strategy, ESG, Procurement, etc.), the first option
+  MUST be `Corporate function or specialist team (please specify)` — and
+  when the user picks it, capture the team name via the tool's built-in
+  free-text "Other" fallback and use it verbatim in the JD.
+- **Do NOT** use the historical six-pool taxonomy in any 2026+ JD.
+- **Do NOT** use the word "pool" — PIF's own word is "portfolio."
 
 ### Question F — Reports to *(always ask)*
 
@@ -271,9 +285,17 @@ findings into chat.
 Produce the JD content in memory (chat gets a brief summary only). Apply the following principles:
 
 ### 4.1 Role Overview / Purpose (1–2 short paragraphs)
-Explain **why this role exists** and its impact on the business. Lead with the outcome the role delivers, not the tasks it performs. Anchor to the division's mission.
 
-**PIF-context integration (MANDATORY):** consult §9 (per-division flavor snippets) of `references/pif_context.md` for the division selected in Question E. Paraphrase the snippet into the Role Overview — do NOT paste verbatim, and do NOT skip this step. Additionally, weave in Stage B answers: the year-one problem from Question H (verbatim if the user typed a free-text answer) and the stakeholder set from Question I. This is what turns the overview from generic to PIF-specific.
+Explain **why this role exists** and its impact on the business. Lead with the outcome the role delivers, not the tasks it performs.
+
+**PIF-context integration (MANDATORY):** anchor the overview to whatever portfolio, division, or team was selected in Question E, using **only verbatim glossary language** from `references/pif_context.md`:
+
+- If the answer is **Vision Portfolio** or a specific ecosystem → paraphrase the description in glossary §2 and §3
+- If **Strategic Portfolio** or **Financial Portfolio** → paraphrase glossary §2
+- If a **named investment division** (International Investments Division, MENA Investments Division, Local Real Estate Investment Division) → reference the division by its verbatim glossary name (§4)
+- If **corporate function or specialist team (user-specified)** → use the user's verbatim team name; do NOT anchor to any PIF department that isn't in the glossary
+
+Additionally weave in Stage B answers: the year-one problem from Question H (verbatim if the user typed free text) and the stakeholder set from Question I. Do NOT paste glossary language verbatim — paraphrase — but do NOT introduce PIF terms that aren't in the glossary.
 
 ### 4.2 Key Responsibilities (5–8 bullets)
 Outcome-oriented, not activity-oriented. Each bullet starts with an action verb and describes a result. Avoid vague phrases like *"handle assigned tasks"* or *"other duties as needed."*
@@ -312,17 +334,20 @@ Include a short block near the top with: **Employment type**, **Work arrangement
 
 ### 4.7 What We Offer (1 short paragraph)
 
-Employer value proposition tied to the division and level. What's genuinely differentiated about working here.
+Employer value proposition. What's genuinely differentiated about working at PIF.
 
-**PIF-context integration (MANDATORY):** consult §6 (tone words and EVP) and §9 (per-division flavor snippet) of `references/pif_context.md`. Weave in one or two of the listed tone words and — where genuinely relevant to the level — reference safe programs from §6 (PIF Academy, Graduate Development Program, Portfolio Management Development Program, international-office exposure, portfolio-company secondments).
+**PIF-context integration (MANDATORY):** use only verbatim EVP language from glossary §7 (safe to quote or paraphrase). Where genuinely relevant, reference programs from glossary §6:
+- **PIF Academy** — safe to mention for any level
+- **Graduate Development Program (GDP)** — mention ONLY for entry-level roles that are Saudi-national-eligible; do NOT mention in senior or expat JDs
+- Do NOT mention "Faces of PIF," "azm," or "PIF Private Sector Hub" in a JD (they are marketing/programme assets, not role benefits)
 
-**Hard prohibitions (from §6 and §10 of the reference file):**
+**Hard prohibitions (from glossary §7 and §11):**
 - Never emit specific comp figures, ranges, bonus structure, or allowance amounts
-- Never emit Vision 2030 target percentages, target dates, or the names of national programmes (Saudization, Nitaqat, etc.)
+- Never emit Vision 2030 target percentages, target dates, or Saudi national programme names (Saudization, Nitaqat, azm, HRDF, etc.)
 - Never quote specific AUM or headcount figures
-- Never name individuals (governor, chair)
-- Never assert Arabic as a required, preferred, or optional language
-- Never use grandiose or generic-marketing phrasing that could apply to any employer
+- Never name individuals
+- Never assert Arabic as a language requirement
+- Never introduce a PIF-specific term that isn't in the glossary
 
 ### 4.8 Bias, Inclusivity & PIF-Content Audit
 
@@ -355,28 +380,35 @@ Invoke the `docx` skill to generate a Word document following this structure and
 
 1. **Header** (top of first page)
    - Title: *"Job Description — [Role Name]"* (20pt, PIF Green `005C4D`, bold, Fund Light with Calibri fallback)
-   - Subtitle: *"[Division] · [Level] · PIF"* (12pt, gray `595959`)
+   - Subtitle: *"[Portfolio / Division / Team] · [Level] · PIF"* (12pt, gray `595959`) — use the verbatim glossary term from the Question E answer
    - Horizontal line divider in PIF Green
 
-2. **Work Details Block** — small table near the top
+2. **About PIF** — new in v1.7.0 — a two-line block immediately after the header, before the Work Details table
+   - Content: PIF's public positioning line from glossary §1, paraphrased into two short sentences. Safe template: *"PIF is one of the world's largest sovereign investors, developing a portfolio of high-quality domestic, regional and international investments across sectors, geographies, and asset classes. We are driving the growth of ecosystems, companies, and jobs across Saudi Arabia and internationally."*
+   - Style: 10pt italic, text gray `595959`
+   - Do NOT quote AUM or exact headcount here. Do NOT mention Vision 2030 as a phrase.
+
+3. **Work Details Block** — small table
    - Employment type · Work arrangement · Location · Reports to
    - Fills in from the MCQ answers
 
-3. **Role Overview** — heading in PIF Green, 1–2 paragraphs in body gray
+4. **Role Overview** — heading in PIF Green, 1–2 paragraphs in body gray
 
-4. **Key Responsibilities** — heading in PIF Green, bulleted list
+5. **Key Responsibilities** — heading in PIF Green, bulleted list
 
-5. **Must-Have Qualifications** — heading in PIF Green, bulleted list
+6. **Must-Have Qualifications** — heading in PIF Green, bulleted list
 
-6. **Nice-to-Have Qualifications** — heading in PIF Green, bulleted list styled inside a tan-bordered callout box (`C4984F` border) to visually distinguish from must-haves
+7. **Nice-to-Have Qualifications** — heading in PIF Green, bulleted list styled inside a tan-bordered callout box (`C4984F` border) — **the callout box MUST be built exactly per the callout-box spec in §Styling below**; the v1.6.0 bug where the first bullet sat outside the border must not recur
 
-7. **30/60/90-Day Success Expectations** — 3-column table
+8. **30/60/90-Day Success Expectations** — 3-column table
    - Header row: PIF Green fill, white text (*"First 30 Days"* / *"First 60 Days"* / *"First 90 Days"*)
    - Body rows: alternating white and light gray (`F2F2F2`)
 
-8. **What We Offer** — heading in PIF Green, 1 short paragraph
+9. **What We Offer** — heading in PIF Green, 1 short paragraph
 
-9. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
+10. **Inclusion tagline** — new in v1.7.0 — one line above the footer, drawn verbatim (or paraphrased) from glossary §7 EVP language. Safe template: *"PIF empowers its people to make an impact and shape the future — we welcome candidates who bring diverse perspectives to that mission."* Style: 9pt italic, text gray `595959`, centered.
+
+11. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
 
 ### Styling specification
 
@@ -389,6 +421,16 @@ Invoke the `docx` skill to generate a Word document following this structure and
 | Table header background | PIF Green `005C4D` | — | — |
 | Table header text | White `FFFFFF` | Fund Light | 11pt bold |
 | Footer | Soft Gray `9A9A9A` | Fund Light | 8pt |
+
+### Nice-to-Have callout box — exact structure (v1.7.0, MANDATORY)
+
+The v1.6.0 output had a bug where the first bullet in the Nice-to-Have callout sat outside the tan border with a different indent from the others. Root cause: mixed paragraph styles or a stray paragraph outside the table cell. The build code MUST enforce all of the following:
+
+1. The callout is a **single 1×1 table** with a tan (`C4984F`) 1.5pt border on all four sides
+2. Every bullet is a paragraph **inside** that single cell — nothing appears before or after the cell
+3. Every bullet paragraph uses the **same** style (`List Bullet`) and the **same** `paragraph_format.left_indent` value (recommend `Cm(0.4)`), explicitly set on every paragraph, not inherited
+4. The first paragraph inside the cell is a bullet — do NOT emit a blank paragraph or a plain paragraph before the first bullet
+5. Verify visually after generation: all bullets align on the same left edge, all sit *inside* the tan border. If they don't, the build script is wrong and must be fixed before shipping.
 
 ### File location and naming
 Save the file to:
