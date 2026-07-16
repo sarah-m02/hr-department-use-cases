@@ -2,7 +2,7 @@
 name: hr-candidate-assessment
 description: Assesses candidates against a role by parsing their CVs, scoring against a role-specific rubric, and producing a ranked long-list with per-candidate scorecards. Uses blind review to reduce bias. Produces PIF-styled Word document (rubric + methodology) and Excel scorecard (ranked candidates with per-dimension scores). Trigger phrases include "assess candidates for [role]", "screen CVs for [role]", "rank these candidates for [role]", "candidate assessment for [role]", or when the user asks to evaluate or shortlist applicants.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   attribution: Adapted from the CV Validation & Candidate Screening skill (MCP Market). Restructured into an interactive Claude Code flow, adapted to produce PIF-styled Word and Excel artifacts, and integrated with our established trigger-preprocessing + MCQ pattern. Standard HR practices (blind review, weighted rubrics, tiered ranking) are common to the field.
 ---
 
@@ -271,68 +271,90 @@ Compute batch-level statistics:
 
 ---
 
-## Step 8 — Produce the Artifacts (PIF-Styled)
+## Step 8 — Produce the Artifacts via the LOCKED TEMPLATE (`build_assessment.py`)
 
-### Artifact 1 — Word Document: Assessment Rubric and Methodology
+**Do NOT invoke the `docx` or `xlsx` skills and do NOT hand-generate `python-docx` or `openpyxl` code inside an assessment run.** Every rubric + scorecard from this skill must go through the locked template:
 
-Invoke the `docx` skill.
+**`~/.claude/skills/hr-candidate-assessment/references/build_assessment.py`**
 
-**Structure:**
-1. **Header** — *"Candidate Assessment Rubric — [Role Name]"* (20pt PIF Green `005C4D` bold, Fund Light with Calibri fallback)
-2. **Subtitle** — *"[Division] · [Level] · PIF"* (12pt gray `595959`)
-3. **Horizontal green divider**
-4. **Role Summary** — 1 short paragraph (from Step 1–3 inputs)
-5. **Rubric Dimensions** — table with Dimension, Weight, and Description columns; header row in PIF Green with white text
-6. **Must-Have Requirements** — bulleted list, framed by the chosen threshold
-7. **Tier Definitions** — small table with Tier, Score Range, Recommendation
-8. **Blind Review Protocol** — 1 paragraph explaining how identifiers were separated
-9. **Batch Summary** — total candidates, distribution across tiers, common gaps
-10. **Footer** — *"Confidential — HR use only"* soft gray `9A9A9A` 8pt right-aligned
+Same code every run → pixel-identical formatting on both artifacts (fonts, colors, table borders, tier-cell coloring, column widths, evidence-sheet layout). Fund Light font, PIF Green `005C4D`, tan `C4984F`, text gray `595959` all baked into the script.
 
-### Artifact 2 — Excel Scorecard: Ranked Candidate List
+### How to invoke it
 
-Invoke the `xlsx` skill.
+1. Assemble a JSON blob matching the schema below (in memory or as a temp file).
+2. Run `py "<path to build_assessment.py>" "<path to json>"` (Windows) — the script reads JSON from the argument or stdin.
+3. The script writes both files to `~/HR-Workspace/hr-candidate-assessment/outputs/`:
+   - `YYYYMMDD_Assessment_Rubric_<role_slug>.docx`
+   - `YYYYMMDD_Scorecard_<role_slug>.xlsx`
+4. File-lock retry (`_v2`…`_v9` suffixes) is automatic if either file is open in Word / Excel.
 
-**Sheet 1 — Ranked Scorecard**
+### JSON contract (v1.5.0)
 
-Columns (in order):
-1. Rank
-2. Candidate ID (real name after reunite)
-3. Tier
-4. Composite Score
-5. Technical Fit (weighted)
-6. Experience (weighted)
-7. Leadership (weighted)
-8. Domain (weighted)
-9. Culture (weighted)
-10. Must-Have Status (Pass / Fail with note)
-11. Red Flags (list or "None")
-12. Key Strengths (2–3 short phrases)
-13. Key Gaps (2–3 short phrases)
-14. Recommendation
+```json
+{
+  "role": {
+    "name": "Senior Analyst",
+    "role_slug": "Senior_Analyst",
+    "level": "Senior Analyst / Manager (mid-career, 4-8 yrs)",
+    "division": "Investments Strategy Division",
+    "summary_paragraph": "Role summary + scoring emphasis + must-have threshold, in one paragraph."
+  },
+  "dimensions": [
+    {"name": "Functional & Technical Fit", "weight_pct": 30, "description": "..."},
+    {"name": "Relevant Experience",        "weight_pct": 25, "description": "..."},
+    {"name": "Leadership & Ownership",     "weight_pct": 20, "description": "..."},
+    {"name": "Domain / Sector Alignment",  "weight_pct": 15, "description": "..."},
+    {"name": "Culture & Values Fit",       "weight_pct": 10, "description": "..."}
+  ],
+  "must_haves": {
+    "threshold_note": "Threshold: ...",
+    "requirements": ["req 1", "req 2", "..."]
+  },
+  "tiers": [
+    {"name": "Advance to interview", "range": "≥ 75, all must-haves met", "recommendation": "..."},
+    {"name": "Second-look pool",     "range": "55–74 (...)",              "recommendation": "..."},
+    {"name": "Not moving forward",   "range": "< 55, or must-have failure",    "recommendation": "..."}
+  ],
+  "blind_review_note": "Before scoring, each CV was stripped of identifying information...",
+  "batch_summary": ["line 1", "line 2", "line 3"],
+  "candidates": [
+    {
+      "rank": 1,
+      "name": "Real Name",
+      "tier": "Advance to interview",
+      "composite": 85,
+      "scores": [
+        {"dim_name": "Functional & Technical Fit", "raw": 88, "weighted": 26.4, "evidence": "..."},
+        {"dim_name": "Relevant Experience",        "raw": 85, "weighted": 21.25, "evidence": "..."},
+        {"dim_name": "Leadership & Ownership",     "raw": 80, "weighted": 16,    "evidence": "..."},
+        {"dim_name": "Domain / Sector Alignment",  "raw": 90, "weighted": 13.5,  "evidence": "..."},
+        {"dim_name": "Culture & Values Fit",       "raw": 82, "weighted": 8.2,   "evidence": "..."}
+      ],
+      "must_have_status": "Pass — all must-haves met",
+      "red_flags": "None",
+      "key_strengths": "...",
+      "key_gaps": "...",
+      "recommendation": "..."
+    }
+  ]
+}
+```
 
-**Styling:**
-- Header row: PIF Green `005C4D` fill, white bold text
-- Body: alternating white and light gray `F2F2F2`
-- Tier cells color-coded:
-  - Advance to interview → PIF Green fill (`005C4D`), white text
-  - Second-look pool → Tan fill (`C4984F`), white text
-  - Not moving forward → Soft gray fill (`9A9A9A`), white text
-- Composite Score column: conditional formatting bar chart (0–100)
-- Freeze top row
+### Rules
 
-**Sheet 2 — Per-Candidate Evidence**
+- **The JSON is the ONLY thing that varies per run.** Fonts, colors, table borders, column widths, tier-cell coloring — all locked in the script.
+- **Do not** write a per-run Python file, embed docx/xlsx code in chat, or invoke the `docx`/`xlsx` skills for the render step.
+- **All string fields must be pre-audited by Steps 6–7** before landing in the JSON. Scores must have evidence. Every claim must be traceable.
+- **If the script fails** (missing dep, schema mismatch, filesystem error), surface the error and stop — do not fall back to hand-generated code.
 
-For each candidate: a small structured block with per-dimension score AND the specific CV quote or reference that supports that score. This is the auditable evidence trail.
+### File location and naming (produced by the script)
 
-### File location and naming
-Save both files to:
-`~/HR-Workspace/hr-candidate-assessment/outputs/`
+- `YYYYMMDD_Assessment_Rubric_<role_slug>.docx`
+- `YYYYMMDD_Scorecard_<role_slug>.xlsx`
 
-- `YYYYMMDD_Assessment_Rubric_[Role_Slug].docx`
-- `YYYYMMDD_Scorecard_[Role_Slug].xlsx`
+Both saved to `~/HR-Workspace/hr-candidate-assessment/outputs/`.
 
-Example: `~/HR-Workspace/hr-candidate-assessment/outputs/20260712_Assessment_Rubric_Senior_Investment_Analyst.docx`
+Example: `~/HR-Workspace/hr-candidate-assessment/outputs/20260716_Assessment_Rubric_Senior_Analyst.docx`
 
 ### Closing message to user (concise)
 
