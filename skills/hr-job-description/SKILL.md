@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions grounded in PIF-specific context (divisions, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.8.0"
+  version: "1.8.1"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -394,32 +394,27 @@ Invoke the `docx` skill to generate a Word document following this structure and
    - Subtitle: *"[Portfolio / Division / Team] · [Level] · PIF"* (12pt, gray `595959`) — use the verbatim glossary term from the Question E answer
    - Horizontal line divider in PIF Green
 
-2. **About PIF** — new in v1.7.0 — a two-line block immediately after the header, before the Work Details table
-   - Content: PIF's public positioning line from glossary §1, paraphrased into two short sentences. Safe template: *"PIF is one of the world's largest sovereign investors, developing a portfolio of high-quality domestic, regional and international investments across sectors, geographies, and asset classes. We are driving the growth of ecosystems, companies, and jobs across Saudi Arabia and internationally."*
-   - Style: 10pt italic, text gray `595959`
-   - Do NOT quote AUM or exact headcount here. Do NOT mention Vision 2030 as a phrase.
-
-3. **Work Details Block** — small table
+2. **Work Details Block** — small table
    - Employment type · Work arrangement · Location · Reports to
    - Fills in from the MCQ answers
 
-4. **Role Overview** — heading in PIF Green, 1–2 paragraphs in body gray
+3. **Role Overview** — heading in PIF Green, 1–2 paragraphs in body gray
 
-5. **Key Responsibilities** — heading in PIF Green, bulleted list
+4. **Key Responsibilities** — heading in PIF Green, bulleted list
 
-6. **Must-Have Qualifications** — heading in PIF Green, bulleted list
+5. **Must-Have Qualifications** — heading in PIF Green, bulleted list
 
-7. **Nice-to-Have Qualifications** — heading in PIF Green, bulleted list styled inside a tan-bordered callout box (`C4984F` border) — **the callout box MUST be built exactly per the callout-box spec in §Styling below**; the v1.6.0 bug where the first bullet sat outside the border must not recur
+6. **Nice-to-Have Qualifications** — heading in PIF Green, bulleted list styled inside a tan-bordered callout box (`C4984F` border) — **the callout box MUST be built exactly per the callout-box spec in §Styling below**
 
-8. **30/60/90-Day Success Expectations** — 3-column table
+7. **30/60/90-Day Success Expectations** — 3-column table
    - Header row: PIF Green fill, white text (*"First 30 Days"* / *"First 60 Days"* / *"First 90 Days"*)
    - Body rows: alternating white and light gray (`F2F2F2`)
 
-9. **What We Offer** — heading in PIF Green, 1 short paragraph
+8. **What We Offer** — heading in PIF Green, 1 short paragraph
 
-10. **Inclusion tagline** — one line above the footer, drawn verbatim (or paraphrased) from glossary §9 EVP language. Safe template: *"PIF empowers its people to make an impact and shape the future — we welcome candidates who bring diverse perspectives to that mission."* Style: 9pt italic, text gray `595959`, centered.
+9. **Inclusion tagline** — one line above the footer, drawn verbatim (or paraphrased) from glossary §9 EVP language. Safe template: *"PIF empowers its people to make an impact and shape the future — we welcome candidates who bring diverse perspectives to that mission."* Style: 9pt italic, text gray `595959`, centered.
 
-11. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
+10. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
 
 ### Styling specification
 
