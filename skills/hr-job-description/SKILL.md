@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions grounded in PIF-specific context (divisions, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.8.1"
+  version: "1.9.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -383,9 +383,51 @@ If any of these are found, remove the offending line and continue — do not sto
 
 ---
 
-## Step 5 — Produce the Artifact (PIF-Styled Word Document)
+## Step 5 — Produce the Artifact via the LOCKED TEMPLATE (`build_jd.py`)
 
-Invoke the `docx` skill to generate a Word document following this structure and styling.
+**Do NOT invoke the `docx` skill and do NOT hand-generate `python-docx` code inside a JD run.** Every JD from this skill must go through the locked template:
+
+**`~/.claude/skills/hr-job-description/references/build_jd.py`**
+
+Same code every run → pixel-identical formatting (fonts, colors, table widths, callout dimensions, bullet indents, footer position, spacing). Font is Fund Light, PIF Green `005C4D`, tan `C4984F`, text gray `595959` — all baked into the script.
+
+### How to invoke it
+
+1. Assemble a JSON blob matching the schema below (in memory or as a temp file).
+2. Run `py "<path to build_jd.py>" "<path to json>"` (Windows) — the script reads JSON from the argument or stdin.
+3. The script writes to `~/HR-Workspace/hr-job-description/outputs/YYYYMMDD_JD_<Role_Slug>.docx` and automatically retries with `_v2..._v9` suffixes if the target is open in Word.
+
+### JSON contract (v1.9.0)
+
+```json
+{
+  "role": {
+    "name": "Senior Analyst",
+    "level": "Senior",
+    "portfolio_or_division": "Investments Strategy Division",
+    "employment_type": "Full-time (permanent)",
+    "work_arrangement": "On-site (Riyadh)",
+    "location": "Riyadh",
+    "reports_to": "Head of Investments Strategy Division"
+  },
+  "role_overview": ["paragraph 1", "paragraph 2"],
+  "responsibilities": ["bullet 1", "bullet 2", "..."],
+  "must_haves": ["bullet 1", "bullet 2", "..."],
+  "nice_to_haves": ["bullet 1", "bullet 2", "..."],
+  "day_30": ["bullet 1", "bullet 2"],
+  "day_60": ["bullet 1", "bullet 2"],
+  "day_90": ["bullet 1", "bullet 2"],
+  "what_we_offer": "paragraph"
+}
+```
+
+All string fields must be **pre-audited** by Step 4.8 before being placed in the JSON — no comp figures, no national programme names, no Vision 2030 phrasings, no invented department names, no Arabic language mention.
+
+### Rules
+
+- **The JSON is the ONLY thing that varies per JD.** Fonts, colors, table widths, callout dimensions, spacing — all locked in the script. Do NOT edit `build_jd.py` per JD. If a genuine template change is needed, edit the script (bumping the skill version) — never inline.
+- **Do not** write a per-JD Python file. Do not embed docx code in chat. Do not invoke the `docx` skill for the JD render step.
+- **If the script fails** (missing dependency, JSON schema mismatch, filesystem error), surface the error to the user and stop — do not fall back to hand-generated docx.
 
 ### Document structure
 
@@ -412,9 +454,7 @@ Invoke the `docx` skill to generate a Word document following this structure and
 
 8. **What We Offer** — heading in PIF Green, 1 short paragraph
 
-9. **Inclusion tagline** — one line above the footer, drawn verbatim (or paraphrased) from glossary §9 EVP language. Safe template: *"PIF empowers its people to make an impact and shape the future — we welcome candidates who bring diverse perspectives to that mission."* Style: 9pt italic, text gray `595959`, centered.
-
-10. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
+9. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
 
 ### Styling specification
 
