@@ -20,12 +20,12 @@ JSON schema (all fields required unless noted):
   "role": {
     "name": "Senior Analyst",               // used in title + filename
     "level": "Senior",                       // shown in subtitle
-    "portfolio_or_division": "Investments Strategy Division",
+    "portfolio_or_division": "AI & Digital Hardware",
                                              // verbatim glossary term
     "employment_type": "Full-time (permanent)",
     "work_arrangement": "On-site (Riyadh)",
     "location": "Riyadh",
-    "reports_to": "Head of Investments Strategy Division"
+    "reports_to": "Head of AI & Digital Hardware"
   },
   "role_overview": ["paragraph 1", "paragraph 2"],   // 1-2 short paragraphs
   "responsibilities": ["bullet 1", ...],              // 5-8 bullets
@@ -190,7 +190,7 @@ def _build_header(doc, role: dict) -> None:
     run_t = title.add_run(f"Job Description — {role['name']}")
     _set_run_font(run_t, size=TITLE_PT, color_hex=PIF_GREEN, bold=True)
 
-    subtitle_text = f"{role['portfolio_or_division']} · {role['level']} · PIF"
+    subtitle_text = f"{role['portfolio_or_division']} · {role['level']} · Alat"
     subtitle = doc.add_paragraph()
     subtitle.paragraph_format.space_after = Pt(4)
     run_s = subtitle.add_run(subtitle_text)
@@ -366,7 +366,7 @@ def _build_footer(doc) -> None:
     fp = footer.paragraphs[0]
     fp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     fp.text = ""
-    run = fp.add_run("PIF Talent Acquisition")
+    run = fp.add_run("Alat Talent Acquisition")
     _set_run_font(run, size=FOOTER_PT, color_hex=SOFT_GRAY, italic=True)
 
 

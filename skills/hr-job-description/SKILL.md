@@ -1,15 +1,15 @@
 ---
 name: hr-job-description
-description: Drafts inclusive, bias-audited job descriptions grounded in PIF-specific context (divisions, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [division]", "rewrite this JD", or when the user asks to create or refine a job posting.
+description: Drafts inclusive, bias-audited job descriptions grounded in Alat-specific context (business units, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [business unit]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "1.9.0"
+  version: "2.0.0"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
 # HR Job Description Drafting
 
 ## Purpose
-Turn a short role brief (e.g. *"Senior Investment Analyst, Real Estate"*) into a full, inclusive job description with must-have vs. nice-to-have qualifications and 30/60/90-day success expectations. Delivers the final JD as a PIF-styled Word document.
+Turn a short role brief (e.g. *"Senior Manager, Risk Management"*) into a full, inclusive job description with must-have vs. nice-to-have qualifications and 30/60/90-day success expectations. Delivers the final JD as a PIF-styled Word document.
 
 ---
 
@@ -51,53 +51,48 @@ Example: *"Received the JD. Saved a copy to `~/HR-Workspace/hr-job-description/i
 
 ---
 
-## Step 0 — Consult the PIF Glossary (MANDATORY, silent)
+## Step 0 — Consult the Alat Glossary (MANDATORY, silent)
 
 Before any other step, silently load and internalize:
 
-**`~/.claude/skills/hr-job-description/references/pif_context.md`**
+**`~/.claude/skills/hr-job-description/references/alat_context.md`**
 
-**Treat this file as a strict GLOSSARY, not a description.** Every PIF-specific
-term in the JD (division name, portfolio name, ecosystem name, program name,
-tagline, EVP phrase) must appear in that glossary. If a PIF-specific term
-is needed and it is not in the glossary → **do NOT invent one**. Either
-ask the user to provide it (via the AskUserQuestion "Other" free-text
-fallback) or omit the reference entirely. This is the single most important
-rule in v1.7.0.
+**Treat this file as a strict GLOSSARY, not a description.** Every Alat-specific
+term in the JD (business-unit name, sub-entity name, EVP phrase, tagline)
+must appear in that glossary. If an Alat-specific term is needed and it is
+not in the glossary → **do NOT invent one**. Either ask the user to provide
+it (via the AskUserQuestion "Other" free-text fallback) or omit the
+reference entirely. This is the single most important rule of the skill.
 
 Key hard rules to internalise from the glossary (do NOT restate them to
 the user):
 
 - Never emit specific comp figures, bonus structure, allowance amounts, or
   vacation-day counts.
-- Never emit Vision 2030 target percentages, target dates, or the names of
-  Saudi national programmes (Saudization, Nitaqat, azm, HRDF, etc.).
-- Never name individuals (Governor, Chairman, Deputy Governor, division heads)
-  in the JD body.
-- Never quote specific AUM or headcount figures.
+- Never emit Vision 2030 target percentages, target dates, or the phrase
+  *"Vision 2030"* itself.
+- Never emit the names of Saudi national programmes (Saudization, Nitaqat,
+  Tamheer, HRDF, etc.).
+- **Never mention PIF, "Public Investment Fund," or Alat's ownership by PIF
+  in any customer-facing artifact.** Alat is presented as a standalone entity.
+- Never name individuals (Chairman, CEO, Board members) in the JD body.
+- Never quote specific headcount figures or the *"39,000 jobs"* / *"$9.3 billion"* scale targets.
 - Never assert Arabic as a required, preferred, or optional language.
 - Never label any MCQ option as "Recommended" — ordering is signal enough.
-- Never use the word "pool" — PIF's own word is "portfolio."
-- Never use the historical six-pool taxonomy ("Saudi Equity Holdings,"
-  "Saudi Sector Development," etc.) in a 2026+ JD — the current structure
-  is the three-portfolio framework (Vision / Strategic / Financial).
-- Do NOT invent a department, division, sector, section, or team name
-  beyond what glossary §4 and §5 list. Many corporate functions ARE now
-  verified in §5 (Human Capital, Corporate Communications, Legal, Risk,
-  Compliance, Financial Accounting & Control Department, Investments
-  Strategy Division, People Development Department, PMO Governance and
-  Quality Team, PPA Department, Governor's Office, Shared Services, and
-  others) — use them verbatim when the role fits. If a needed unit is NOT
-  in §4/§5, do not invent it: ask the user via the "Other" free-text
-  fallback and use their answer verbatim.
-- Verbatim names of the six Vision Portfolio ecosystems (glossary §3) must
-  be preserved exactly — no shortening, reordering, or renaming.
-- PIF's org hierarchy has five tiers (glossary §6): Portfolio → Ecosystem →
-  Sector → Division/Department → Section/Team. Anchor the JD at the most
-  specific verified tier available.
+- Never reference the historical seven-unit taxonomy (semiconductors as a
+  business unit, "smart appliances" as a separate BU, "next-generation
+  infrastructure" as a separate BU) — the current structure is the **four
+  business units** in glossary §3 (AI & Digital Hardware · Building & Heavy
+  Equipment · Electrification · Home & Medical Equipment).
+- Do NOT invent a corporate function department name (Legal, HR, Finance,
+  Risk, Compliance, Comms, etc. are NOT enumerated on Alat's public site).
+  For a role that sits in a horizontal function, use the AskUserQuestion
+  "Other" free-text fallback and quote the user's team name verbatim.
+- Verbatim names of the four business units (glossary §3) must be
+  preserved exactly — no shortening, reordering, or renaming.
 
 If the glossary file is missing or empty, stop and tell the user in one
-line — the skill's PIF-grounding is not optional.
+line — the skill's Alat-grounding is not optional.
 
 ---
 
@@ -178,22 +173,25 @@ Use the `AskUserQuestion` tool to ask short multiple-choice questions in a singl
 ### Question E — Portfolio, division, or team *(only if not in trigger — uses the glossary-driven Smart Division rule)*
 
 - **header:** `Where it sits`
-- **question:** *"Where does this role sit in PIF?"*
-- **options (4):** built dynamically using **§12 of the PIF Glossary
-  (`pif_context.md`)**. Match the role's title keywords against the tables
-  in §12 (A/B/C/D) and populate the four options in the order the glossary
+- **question:** *"Where does this role sit at Alat?"*
+- **options (4):** built dynamically using **§10 of the Alat Glossary
+  (`alat_context.md`)**. Match the role's title keywords against the tables
+  in §10 (A / B / C) and populate the four options in the order the glossary
   prescribes. The fourth option is always `Other`. All options must be
   verbatim glossary terms — do NOT compress or paraphrase names.
 - **multiSelect:** false
 - **Do NOT** label any option as "Recommended."
 - **For corporate-function role keywords** (Legal, Finance, HR, Comms,
-  Risk, Compliance, Audit, Technology, Strategy, PMO, etc.), §12 table C
-  now supplies verified PIF department names as options (e.g. Human Capital
-  for HR-flavored roles; Legal, Risk, Compliance directly). Use these
-  verbatim. Only fall back to the "Other" free-text option if none of the
-  §12 table C rules match — never invent a department name.
-- **Do NOT** use the historical six-pool taxonomy in any 2026+ JD.
-- **Do NOT** use the word "pool" — PIF's own word is "portfolio."
+  Risk, Compliance, Audit, Technology, Strategy, PMO, etc.), Alat's public
+  site does NOT enumerate department names. §10 table B therefore offers
+  `Corporate function or specialist team (please specify)` as the first
+  option — when the user picks it, capture the team name via the
+  AskUserQuestion `Other` free-text fallback and use it verbatim in the JD.
+  Do NOT invent a department name.
+- **Do NOT** use the historical seven-unit Alat taxonomy (semiconductors,
+  smart appliances as a separate BU, next-generation infrastructure as a
+  separate BU) in any 2026+ JD. Only the four current business units in
+  glossary §3 are valid.
 
 ### Question F — Reports to *(always ask)*
 
@@ -238,7 +236,7 @@ questions. **No "Recommended" labels.**
 - **options (4):**
   - `Delivering a specific pipeline / programme of work`
   - `Building a capability the team currently lacks`
-  - `Owning a stakeholder relationship or portfolio company`
+  - `Owning a stakeholder relationship or partnership`
   - `Turning around underperformance or unblocking delivery`
 - **multiSelect:** false
 
@@ -247,10 +245,10 @@ questions. **No "Recommended" labels.**
 - **header:** `Stakeholders`
 - **question:** *"Which stakeholders will this role interface with most?"*
 - **options (4):**
-  - `Portfolio companies`
+  - `Alat business units or partnerships`
   - `Group / executive leadership`
-  - `External advisors, regulators, or investors`
-  - `Cross-division PIF teams`
+  - `External advisors, regulators, or partners`
+  - `Cross-function Alat teams`
 - **multiSelect:** false
 
 The free-text response to Question H is high signal — capture it verbatim
@@ -298,15 +296,13 @@ Produce the JD content in memory (chat gets a brief summary only). Apply the fol
 
 Explain **why this role exists** and its impact on the business. Lead with the outcome the role delivers, not the tasks it performs.
 
-**PIF-context integration (MANDATORY):** anchor the overview to whatever portfolio, division, or team was selected in Question E, using **only verbatim glossary language** from `references/pif_context.md`:
+**Alat-context integration (MANDATORY):** anchor the overview to whatever business unit or team was selected in Question E, using **only verbatim glossary language** from `references/alat_context.md`:
 
-- If the answer is **Vision Portfolio** or a specific ecosystem → paraphrase the description in glossary §2 and §3
-- If **Strategic Portfolio** or **Financial Portfolio** → paraphrase glossary §2
-- If a **named investment division** (International Investments Division, MENA Investments Division, Local Real Estate Investment Division, Investments Strategy Division, Chief of Staff Division) → reference the division by its verbatim glossary name (§4)
-- If a **verified department or function** from glossary §5 (Human Capital, Corporate Communications, Legal, Risk, Compliance, People Development Department, Financial Accounting & Control Department, PMO Governance and Quality Team, PPA Department, Governor's Office, Shared Services, etc.) → reference it by its verbatim §5 name
-- If a **user-specified team** (via "Other" free-text) → use the user's verbatim team name; do NOT map to a guessed department
+- If the answer is one of the four **business units** (AI & Digital Hardware · Building & Heavy Equipment · Electrification · Home & Medical Equipment) → paraphrase the description in glossary §3 for that unit
+- If a **named partnership or sub-entity** (Alat–Lenovo, Alat AIVisio, Carrier, Dahua, SoftBank, Tahakom, TK Elevator) → reference by its verbatim glossary name (§4)
+- If a **user-specified corporate function or team** (via "Other" free-text) → use the user's verbatim team name; do NOT map to any guessed department
 
-Additionally weave in Stage B answers: the year-one problem from Question H (verbatim if the user typed free text) and the stakeholder set from Question I. Do NOT paste glossary language verbatim — paraphrase — but do NOT introduce PIF terms that aren't in the glossary.
+Additionally weave in Stage B answers: the year-one problem from Question H (verbatim if the user typed free text) and the stakeholder set from Question I. Do NOT paste glossary language verbatim — paraphrase — but do NOT introduce Alat terms that aren't in the glossary.
 
 ### 4.2 Key Responsibilities (5–8 bullets)
 Outcome-oriented, not activity-oriented. Each bullet starts with an action verb and describes a result. Avoid vague phrases like *"handle assigned tasks"* or *"other duties as needed."*
@@ -323,12 +319,12 @@ Only genuinely required to perform the role from day 1. Do NOT inflate — every
 
 **Include a management-experience requirement only if the role manages people.**
 
-**Do NOT include a language requirement about Arabic** (see §11 of `pif_context.md` — Arabic handling is under separate testing and the JD stays silent on it). English is implicit and does not need to be listed.
+**Do NOT include a language requirement about Arabic** (see §11 of `alat_context.md` — Arabic handling is under separate testing and the JD stays silent on it). English is implicit and does not need to be listed.
 
 ### 4.4 Nice-to-Have Qualifications
-Things that would make a candidate stand out but are not required. Typically 3–5 items: adjacent skills, specific industry exposure, advanced degrees, exposure to specific PIF portfolio company sectors (mining, energy, real estate, tech, tourism) where genuinely relevant.
+Things that would make a candidate stand out but are not required. Typically 3–5 items: adjacent skills, specific industry exposure, advanced degrees, exposure to sectors adjacent to Alat's business units (advanced manufacturing, electronics, industrial equipment, energy systems, consumer / medical devices) where genuinely relevant.
 
-**Do NOT list Arabic** here — even as nice-to-have — until the language-handling review is complete (see §11 of `pif_context.md`).
+**Do NOT list Arabic** here — even as nice-to-have — until the language-handling review is complete (see §11 of `alat_context.md`).
 
 **Why the split matters:** Research shows underrepresented candidates hesitate to apply when they don't meet every listed requirement. Separating must-have from nice-to-have materially widens the pool.
 
@@ -345,22 +341,25 @@ Include a short block near the top with: **Employment type**, **Work arrangement
 
 ### 4.7 What We Offer (1 short paragraph)
 
-Employer value proposition. What's genuinely differentiated about working at PIF.
+Employer value proposition. What's genuinely differentiated about working at Alat.
 
-**PIF-context integration (MANDATORY):** use only verbatim EVP language from glossary §9 (safe to quote or paraphrase). Where genuinely relevant, reference programs from glossary §8:
-- **PIF Academy** — safe to mention for any level
-- **Graduate Development Program (GDP)** — mention ONLY for entry-level roles that are Saudi-national-eligible; do NOT mention in senior or expat JDs
-- Do NOT mention "Faces of PIF," "azm," or "PIF Private Sector Hub" in a JD (they are marketing/programme assets, not role benefits)
+**Alat-context integration (MANDATORY):** use only verbatim EVP language from glossary §7 (safe to quote or paraphrase). Alat has no publicly named internal academy or graduate development programme — do NOT invent one. Generic phrasing about "professional development" or "collaborative environment" (from §7) is safe.
 
-**Hard prohibitions (from glossary §10 and §11):**
+**Do NOT reference:**
+- Tamheer (national programme — banned)
+- "Five pivotal values" as named values (Alat references them but does not name them publicly)
+- PIF or "Public Investment Fund" (ownership stays off the JD)
+
+**Hard prohibitions (from glossary §9 and §11):**
 - Never emit specific comp figures, ranges, bonus structure, or allowance amounts
-- Never emit Vision 2030 target percentages, target dates, or Saudi national programme names (Saudization, Nitaqat, azm, HRDF, etc.)
-- Never quote specific AUM or headcount figures
-- Never name individuals
+- Never emit Vision 2030 target percentages, target dates, or Saudi national programme names (Saudization, Nitaqat, Tamheer, HRDF, etc.)
+- Never quote specific headcount figures or the *"39,000 jobs"* / *"$9.3 billion"* scale targets
+- Never mention PIF or Alat's ownership by PIF
+- Never name individuals (Chairman, CEO, Board members)
 - Never assert Arabic as a language requirement
-- Never introduce a PIF-specific term that isn't in the glossary
+- Never introduce an Alat-specific term that isn't in the glossary
 
-### 4.8 Bias, Inclusivity & PIF-Content Audit
+### 4.8 Bias, Inclusivity & Alat-Content Audit
 
 Before finalizing, silently audit the draft for:
 
@@ -370,13 +369,15 @@ Before finalizing, silently audit the draft for:
 - Credentials that aren't genuinely required (e.g. specific school, MBA-only) → move to nice-to-have or remove
 - Cultural assumptions (e.g. *"native English speaker"*) → replace with proficiency-based phrasing
 
-**PIF-content hard-rule audit:** re-scan the entire draft for anything on the §10 / §11 "Do NOT" lists from `pif_context.md`:
+**Alat-content hard-rule audit:** re-scan the entire draft for anything on the §9 / §11 "Do NOT" lists from `alat_context.md`:
 - Any specific SAR/USD figure or comp band → remove
-- Any mention of "Saudization," "Nitaqat," or other named national programs → remove
-- Any Vision 2030 target percentage or year (e.g. *"70% by 2030"*) → remove
+- Any mention of "Saudization," "Nitaqat," "Tamheer," "HRDF," or other named national programs → remove
+- Any Vision 2030 target percentage or year (e.g. *"70% by 2030"*), or the phrase *"Vision 2030"* itself → remove
+- **Any mention of PIF, "Public Investment Fund," or Alat's ownership by PIF → remove**
 - Any mention of Arabic as a language requirement or preference → remove
-- Any named individual (Governor, Chairman, etc.) in the JD body → remove
-- Any specific AUM figure (*"$925B"*, etc.) or specific headcount figure → replace with softer scale language
+- Any named individual (Chairman, CEO, Board members) in the JD body → remove
+- Any specific headcount figure or the *"39,000 jobs"* / *"$9.3 billion"* scale targets → replace with softer scale language
+- Any reference to historical Alat units (semiconductors, "smart appliances" as a separate BU, "next-generation infrastructure" as a separate BU) → remove or map to a current business unit
 - Any "Recommended" tag on a listed option — should not exist in JD output, but check
 
 If any of these are found, remove the offending line and continue — do not stop, do not surface the audit to the user.
@@ -404,11 +405,11 @@ Same code every run → pixel-identical formatting (fonts, colors, table widths,
   "role": {
     "name": "Senior Analyst",
     "level": "Senior",
-    "portfolio_or_division": "Investments Strategy Division",
+    "portfolio_or_division": "AI & Digital Hardware",
     "employment_type": "Full-time (permanent)",
     "work_arrangement": "On-site (Riyadh)",
     "location": "Riyadh",
-    "reports_to": "Head of Investments Strategy Division"
+    "reports_to": "Head of AI & Digital Hardware"
   },
   "role_overview": ["paragraph 1", "paragraph 2"],
   "responsibilities": ["bullet 1", "bullet 2", "..."],
@@ -433,7 +434,7 @@ All string fields must be **pre-audited** by Step 4.8 before being placed in the
 
 1. **Header** (top of first page)
    - Title: *"Job Description — [Role Name]"* (20pt, PIF Green `005C4D`, bold, Fund Light with Calibri fallback)
-   - Subtitle: *"[Portfolio / Division / Team] · [Level] · PIF"* (12pt, gray `595959`) — use the verbatim glossary term from the Question E answer
+   - Subtitle: *"[Business unit / Team] · [Level] · Alat"* (12pt, gray `595959`) — use the verbatim glossary term from the Question E answer
    - Horizontal line divider in PIF Green
 
 2. **Work Details Block** — small table
@@ -454,7 +455,7 @@ All string fields must be **pre-audited** by Step 4.8 before being placed in the
 
 8. **What We Offer** — heading in PIF Green, 1 short paragraph
 
-9. **Footer** — *"PIF Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
+9. **Footer** — *"Alat Talent Acquisition"* in soft gray (`9A9A9A`), 8pt, right-aligned
 
 ### Styling specification
 
@@ -495,7 +496,7 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 
 **Example:**
 > *"JD created.*
-> *Senior Investment Analyst, Real Estate Investments, full-time on-site Riyadh.*
+> *Senior Manager Risk Management, Alat, full-time on-site Riyadh.*
 > *[Open JD](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-job-description/outputs/20260713_JD_Senior_Investment_Analyst.docx)"*
 
 **Silent behavior rules for closing:**
@@ -509,20 +510,20 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 
 ## Key Principles
 
-- **PIF-anchored by default.** Role Overview and What We Offer must consult `references/pif_context.md` — a JD that reads like it could apply to any employer is a bug, not a neutral default.
+- **Alat-anchored by default.** Role Overview and What We Offer must consult `references/alat_context.md` — a JD that reads like it could apply to any employer is a bug, not a neutral default.
 - **Facts over recommendations.** Never label an MCQ option as "Recommended." Order is the only signal — the user knows their own role.
 - **Outcome over activity.** Every responsibility should describe a result, not a task.
 - **Benchmarked, not invented.** Qualifications and years-of-experience bands are calibrated against public peer-organisation JDs (Step 3), not inferred from principles.
 - **Must-have list should be genuinely non-negotiable.** If in doubt, it's a nice-to-have.
-- **Inclusive by default.** Bias audit runs on every draft before saving. The audit also covers PIF-content hard rules (comp, national programs, Vision 2030 phrasings, Arabic silence, named individuals).
+- **Inclusive by default.** Bias audit runs on every draft before saving. The audit also covers Alat-content hard rules (comp, national programs, Vision 2030 phrasings, PIF-ownership silence, Arabic silence, named individuals).
 - **Show the ramp, not just the finish line.** 30/60/90-day expectations set realistic mutual expectations, anchored to the year-one problem from Stage B.
 - **Match responsibilities to team-scope.** IC roles emphasize delivery; management roles emphasize people development.
 - **Compensation is never included.** Not by default, not on request without explicit hiring-manager sign-off, and never as a range. See §11 of the reference file.
-- **The reference file is the source of truth for PIF facts.** Update `pif_context.md` rather than the skill body when PIF divisions, programs, or EVP language change.
+- **The reference file is the source of truth for Alat facts.** Update `alat_context.md` rather than the skill body when Alat business units, programs, or EVP language change.
 
 ## Limitations
 
-- Cannot access real PIF role data — outputs are informed drafts requiring hiring manager review. The `pif_context.md` reference gives PIF-level grounding, not role-specific ground truth.
+- Cannot access real Alat role data — outputs are informed drafts requiring hiring manager review. The `alat_context.md` reference gives Alat-level grounding, not role-specific ground truth.
 - Compensation, benefits, and allowance amounts are never generated. Even on user request, do not emit specific figures — direct the user to their reward/HR partner.
 - Not a substitute for legal review on protected-class language, country-specific labor requirements, or Vision 2030 phrasings.
 - Arabic-language handling is under separate testing — the skill stays silent on Arabic and does not offer a bilingual variant yet.

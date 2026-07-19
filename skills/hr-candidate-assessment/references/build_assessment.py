@@ -20,7 +20,7 @@ JSON schema:
     "name": "Senior Analyst",
     "role_slug": "Senior_Analyst",
     "level": "Senior Analyst / Manager (mid-career, 4-8 yrs)",
-    "division": "Investments Strategy Division",
+    "division": "Corporate function — Risk Management",
     "summary_paragraph": "Role summary + scoring emphasis + must-have threshold, in one paragraph."
   },
   "dimensions": [
@@ -225,7 +225,7 @@ def build_rubric_docx(data: dict, out_path: Path) -> Path:
 
     subtitle = doc.add_paragraph()
     subtitle.paragraph_format.space_after = Pt(4)
-    run_s = subtitle.add_run(f"{role['division']} · {role['level']} · PIF")
+    run_s = subtitle.add_run(f"{role['division']} · {role['level']} · Alat")
     _set_run_font(run_s, size=SUBTITLE_PT, color_hex=TEXT_GRAY, italic=True)
 
     _horizontal_rule(doc)

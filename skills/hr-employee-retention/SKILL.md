@@ -327,7 +327,7 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 
 **Example:**
 > *"Report created.*
-> *6 exits analyzed from Real Estate Investments (Q2 2026), 3 root causes, 5 recommended actions.*
+> *6 exits analyzed from AI & Digital Hardware (Q2 2026), 3 root causes, 5 recommended actions.*
 > *[Open report](file:///C:/Users/Almisned%20Sarah/HR-Workspace/hr-employee-retention/outputs/20260713_Retention_Report_RealEstateInvestments.docx)"*
 
 **Silent behavior rules for closing:**
@@ -360,7 +360,7 @@ After the file is saved, post **only** a short 3-line closing in chat. Do NOT du
 
 ## Example Trigger Prompts
 
-- *"I want to understand why analysts are leaving the Real Estate Investments division"*
+- *"I want to understand why data engineers are leaving the AI & Digital Hardware business unit"*
 - *"Why are our senior analysts leaving?"*
 - *"Analyze retention in the Investments Division"*
 - *"Build a retention report from Q1 exit interviews"*

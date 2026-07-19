@@ -296,7 +296,7 @@ Same code every run → pixel-identical formatting on both artifacts (fonts, col
     "name": "Senior Analyst",
     "role_slug": "Senior_Analyst",
     "level": "Senior Analyst / Manager (mid-career, 4-8 yrs)",
-    "division": "Investments Strategy Division",
+    "division": "Corporate function — Risk Management",
     "summary_paragraph": "Role summary + scoring emphasis + must-have threshold, in one paragraph."
   },
   "dimensions": [
