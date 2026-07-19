@@ -80,6 +80,39 @@ CALLOUT_TABLE_WIDTH = Cm(16.8)                                   # single column
 CALLOUT_BULLET_INDENT = Cm(0.4)
 
 
+# ---------- AI-tell sanitization ----------
+# Deterministic character-level replacements that strip the most common
+# AI-generated giveaways before any string lands in the .docx.
+
+import re as _re
+
+_EM_DASH_RE = _re.compile(r"\s*—\s*")
+
+def _sanitize(text):
+    """Strip em-dashes, en-dashes, and smart quotes from a string."""
+    if not isinstance(text, str):
+        return text
+    text = _EM_DASH_RE.sub(" - ", text)
+    text = text.replace("–", "-")
+    text = text.replace("“", '"').replace("”", '"')
+    text = text.replace("‘", "'").replace("’", "'")
+    text = text.replace("‑", "-")
+    return text
+
+
+def _sanitize_deep(obj):
+    """Recursively sanitize every string inside a JSON-shaped structure."""
+    if isinstance(obj, str):
+        return _sanitize(obj)
+    if isinstance(obj, list):
+        return [_sanitize_deep(x) for x in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_deep(x) for x in obj)
+    if isinstance(obj, dict):
+        return {k: _sanitize_deep(v) for k, v in obj.items()}
+    return obj
+
+
 # ---------- Low-level helpers (identical to retention skill) ----------
 
 def _set_run_font(run, name: str = FONT_PRIMARY, size: int = BODY_PT,
@@ -103,6 +136,7 @@ def _set_run_font(run, name: str = FONT_PRIMARY, size: int = BODY_PT,
 
 def _add_para(doc, text: str, size: int = BODY_PT, color: str = TEXT_GRAY,
               bold: bool = False, italic: bool = False, align=None, space_after: int = 6):
+    text = _sanitize(text)
     p = doc.add_paragraph()
     if align is not None:
         p.alignment = align
@@ -114,6 +148,7 @@ def _add_para(doc, text: str, size: int = BODY_PT, color: str = TEXT_GRAY,
 
 
 def _add_heading(doc, text: str, size: int = SECTION_HEADING_PT):
+    text = _sanitize(text)
     p = doc.add_paragraph()
     p.paragraph_format.space_before = Pt(14)
     p.paragraph_format.space_after = Pt(6)
@@ -123,6 +158,7 @@ def _add_heading(doc, text: str, size: int = SECTION_HEADING_PT):
 
 
 def _add_bullet(doc, text: str, size: int = BULLET_PT, color: str = TEXT_GRAY):
+    text = _sanitize(text)
     p = doc.add_paragraph(style="List Bullet")
     p.paragraph_format.space_after = Pt(3)
     p.paragraph_format.left_indent = Cm(0.4)
@@ -187,7 +223,7 @@ def _build_header(doc, role: dict) -> None:
     """Title + subtitle + horizontal rule."""
     title = doc.add_paragraph()
     title.paragraph_format.space_after = Pt(2)
-    run_t = title.add_run(f"Job Description — {role['name']}")
+    run_t = title.add_run(_sanitize(f"Job Description — {role['name']}"))
     _set_run_font(run_t, size=TITLE_PT, color_hex=PIF_GREEN, bold=True)
 
     subtitle_text = f"{role['portfolio_or_division']} · {role['level']} · Alat"
@@ -412,8 +448,12 @@ def _load_input() -> dict:
     # utf-8-sig strips a BOM if present (Windows PowerShell writes utf-8 with BOM by default).
     if len(sys.argv) >= 2:
         with open(sys.argv[1], "r", encoding="utf-8-sig") as f:
-            return json.load(f)
-    return json.load(sys.stdin)
+            raw = json.load(f)
+    else:
+        raw = json.load(sys.stdin)
+    # Deep-sanitize the entire payload before it hits the render code.
+    # Strips em-dashes, en-dashes, and smart quotes from every string value.
+    return _sanitize_deep(raw)
 
 
 if __name__ == "__main__":

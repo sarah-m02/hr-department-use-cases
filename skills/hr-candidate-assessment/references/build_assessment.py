@@ -120,6 +120,39 @@ def _save_with_retry(save_fn, base_path: Path) -> Path:
     raise PermissionError(f"All {len(candidates)} candidate paths for {base_path.name} are locked.")
 
 
+# ---------- AI-tell sanitization ----------
+# Deterministic character-level replacements that strip the most common
+# AI-generated giveaways before any string lands in the .docx or .xlsx.
+
+import re as _re
+
+_EM_DASH_RE = _re.compile(r"\s*—\s*")
+
+def _sanitize(text):
+    """Strip em-dashes, en-dashes, and smart quotes from a string."""
+    if not isinstance(text, str):
+        return text
+    text = _EM_DASH_RE.sub(" - ", text)
+    text = text.replace("–", "-")
+    text = text.replace("“", '"').replace("”", '"')
+    text = text.replace("‘", "'").replace("’", "'")
+    text = text.replace("‑", "-")
+    return text
+
+
+def _sanitize_deep(obj):
+    """Recursively sanitize every string inside a JSON-shaped structure."""
+    if isinstance(obj, str):
+        return _sanitize(obj)
+    if isinstance(obj, list):
+        return [_sanitize_deep(x) for x in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_deep(x) for x in obj)
+    if isinstance(obj, dict):
+        return {k: _sanitize_deep(v) for k, v in obj.items()}
+    return obj
+
+
 # ---------- Docx helpers ----------
 
 def _set_run_font(run, name: str = FONT_PRIMARY, size: int = BODY_PT,
@@ -143,6 +176,7 @@ def _set_run_font(run, name: str = FONT_PRIMARY, size: int = BODY_PT,
 
 def _add_para(doc, text: str, size: int = BODY_PT, color: str = TEXT_GRAY,
               bold: bool = False, italic: bool = False, align=None, space_after: int = 6):
+    text = _sanitize(text)
     p = doc.add_paragraph()
     if align is not None:
         p.alignment = align
@@ -154,6 +188,7 @@ def _add_para(doc, text: str, size: int = BODY_PT, color: str = TEXT_GRAY,
 
 
 def _add_heading(doc, text: str, size: int = SECTION_HEADING_PT):
+    text = _sanitize(text)
     p = doc.add_paragraph()
     p.paragraph_format.space_before = Pt(14)
     p.paragraph_format.space_after = Pt(6)
@@ -163,6 +198,7 @@ def _add_heading(doc, text: str, size: int = SECTION_HEADING_PT):
 
 
 def _add_bullet(doc, text: str, size: int = BODY_PT, color: str = TEXT_GRAY):
+    text = _sanitize(text)
     p = doc.add_paragraph(style="List Bullet")
     p.paragraph_format.space_after = Pt(3)
     p.paragraph_format.left_indent = Cm(0.4)
@@ -221,7 +257,7 @@ def build_rubric_docx(data: dict, out_path: Path) -> Path:
     # Header
     title = doc.add_paragraph()
     title.paragraph_format.space_after = Pt(2)
-    run_t = title.add_run(f"Candidate Assessment Rubric — {role['name']}")
+    run_t = title.add_run(_sanitize(f"Candidate Assessment Rubric — {role['name']}"))
     _set_run_font(run_t, size=TITLE_PT, color_hex=PIF_GREEN, bold=True)
 
     subtitle = doc.add_paragraph()
@@ -326,7 +362,7 @@ def build_rubric_docx(data: dict, out_path: Path) -> Path:
     fp = footer.paragraphs[0]
     fp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     fp.text = ""
-    run = fp.add_run("Confidential — HR use only")
+    run = fp.add_run(_sanitize("Confidential — HR use only"))
     _set_run_font(run, size=FOOTER_PT, color_hex=SOFT_GRAY, italic=True)
 
     def _save(p: Path) -> None:
@@ -465,7 +501,7 @@ def _build_evidence_sheet(wb: Workbook, data: dict) -> None:
     # Top banner
     ws.merge_cells("A1:C1")
     banner = ws.cell(row=1, column=1,
-                     value="Per-Candidate Evidence — auditable score trail")
+                     value=_sanitize("Per-Candidate Evidence — auditable score trail"))
     banner.font = _xl_font(color_hex=WHITE, bold=True, size=12)
     banner.fill = _xl_fill(PIF_GREEN)
     banner.alignment = Alignment(horizontal="left", vertical="center")
@@ -477,7 +513,7 @@ def _build_evidence_sheet(wb: Workbook, data: dict) -> None:
         # Candidate header row (merged)
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=3)
         header = ws.cell(row=row, column=1,
-                         value=f"{c['name']} — {c['tier']} — Composite {c['composite']}")
+                         value=_sanitize(f"{c['name']} — {c['tier']} — Composite {c['composite']}"))
         header.font = _xl_font(color_hex=WHITE, bold=True, size=11)
         header.fill = _xl_fill(PIF_GREEN)
         header.alignment = Alignment(horizontal="left", vertical="center")
@@ -539,8 +575,13 @@ def _load_input() -> dict:
     # utf-8-sig strips a BOM if present (Windows PowerShell writes utf-8 with BOM by default)
     if len(sys.argv) >= 2:
         with open(sys.argv[1], "r", encoding="utf-8-sig") as f:
-            return json.load(f)
-    return json.load(sys.stdin)
+            raw = json.load(f)
+    else:
+        raw = json.load(sys.stdin)
+    # Deep-sanitize the entire payload before it hits the render code.
+    # Strips em-dashes, en-dashes, and smart quotes from every string value,
+    # covering both the .docx and .xlsx render paths downstream.
+    return _sanitize_deep(raw)
 
 
 if __name__ == "__main__":

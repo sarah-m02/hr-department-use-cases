@@ -2,7 +2,7 @@
 name: hr-job-description
 description: Drafts inclusive, bias-audited job descriptions grounded in Alat-specific context (business units, EVP language, hiring norms) with 30/60/90-day success expectations and must-have vs. nice-to-have qualifications. Uses a structured MCQ intake plus a hiring-manager brief, then benchmarks the role against public peer-organisation JDs before drafting. Produces a PIF-styled Word document. Trigger phrases include "draft a JD for [role]", "write a job description for [role]", "job description for [role] in [business unit]", "rewrite this JD", or when the user asks to create or refine a job posting.
 metadata:
-  version: "2.0.0"
+  version: "2.0.1"
   attribution: Adapted from hr-job-description in tuanductran/hr-skills (MIT-licensed), extended with trigger-context preprocessing, MCQ context gathering, and PIF-styled Word artifact output.
 ---
 
@@ -198,10 +198,10 @@ Use the `AskUserQuestion` tool to ask short multiple-choice questions in a singl
 - **header:** `Reports to`
 - **question:** *"Who will this role report to?"*
 - **options (4):**
-  - `Head / MD of Division or Pool`
-  - `VP / Senior VP within the division`
+  - `Head of Business Unit or Function`
+  - `VP / Senior VP within the unit`
   - `Manager / Team Lead`
-  - `Executive leadership (Governor's office / Investment Committee)`
+  - `Executive leadership (CEO / Chief Officer / Board Committee)`
 - **multiSelect:** false
 
 **After receiving Stage A answers, briefly confirm:**
