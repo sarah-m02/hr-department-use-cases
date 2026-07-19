@@ -77,6 +77,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
 from openpyxl import Workbook
+from openpyxl.formatting.rule import DataBarRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
@@ -439,6 +440,19 @@ def _build_ranked_sheet(wb: Workbook, data: dict) -> None:
         comp_cell = ws.cell(row=row_i, column=4)
         comp_cell.font = _xl_font(size=11, bold=True)
         comp_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Data-bar conditional formatting on the Composite column — same PIF Green
+    # gradient as the pre-v1.5.0 scorecard so composites are visually rank-able
+    # at a glance.
+    last_row = 1 + len(data["candidates"])
+    if last_row >= 2:
+        data_bar = DataBarRule(
+            start_type="num", start_value=0,
+            end_type="num", end_value=100,
+            color=PIF_GREEN,
+            showValue=True,
+        )
+        ws.conditional_formatting.add(f"D2:D{last_row}", data_bar)
 
 
 def _build_evidence_sheet(wb: Workbook, data: dict) -> None:

@@ -277,7 +277,7 @@ Compute batch-level statistics:
 
 **`~/.claude/skills/hr-candidate-assessment/references/build_assessment.py`**
 
-Same code every run → pixel-identical formatting on both artifacts (fonts, colors, table borders, tier-cell coloring, column widths, evidence-sheet layout). Fund Light font, PIF Green `005C4D`, tan `C4984F`, text gray `595959` all baked into the script.
+Same code every run → pixel-identical formatting on both artifacts (fonts, colors, table borders, tier-cell coloring, column widths, evidence-sheet layout, **Composite-column data-bar gradient in PIF Green over a 0–100 scale**). Fund Light font, PIF Green `005C4D`, tan `C4984F`, text gray `595959` all baked into the script.
 
 ### How to invoke it
 
